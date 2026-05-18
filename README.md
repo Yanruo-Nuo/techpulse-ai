@@ -3,7 +3,7 @@
 
 # TechPulse AI ⬛
 
-**AI 增强的数据工程平台** — 数据采集 · 流处理 · AI 分类 · 数仓建模 · 语义检索 · 全链路监控
+**AI 数据工程平台** — 数据采集 · 流处理 · 多轮 AI 知识抽取 · 数仓建模 · 块级语义检索 · 全链路监控
 
 [![Kafka](https://img.shields.io/badge/Message_Queue-Kafka-231F20?logo=apache-kafka)](https://kafka.apache.org/)
 [![dbt](https://img.shields.io/badge/Data_Modeling-dbt-FF694B?logo=dbt)](https://www.getdbt.com/)
@@ -20,27 +20,53 @@
 
 ## 项目简介
 
-TechPulse AI 从 6 个技术源（Hacker News、Reddit、GitHub Trending、Dev.to、Lobsters、RSS）实时采集技术新闻，经过 Kafka 流处理 → AI 自动分类和摘要 → OSS 数据湖 → MaxCompute 数仓 → dbt 分层建模 → Qdrant 语义检索 → Streamlit 前端展示的完整数据链路。
+TechPulse AI 从 6 个技术源（Hacker News、Reddit、GitHub Trending、Dev.to、Lobsters、RSS）实时采集技术新闻，经过 Kafka 流处理 → **多轮 AI 知识抽取** → OSS 数据湖 → MaxCompute 数仓 → dbt 分层建模 → Qdrant 块级语义检索 → Streamlit 前端展示的完整数据链路。
 
-**核心数据流：** `采集 → 消息队列 → AI 增强 → 数据湖 → 数仓建模 → 服务供数 → 展示`
+**AI 管线核心升级：** 当前项目将传统"单次 AI 摘要调用"升级为 **3 轮知识抽取管线**。文章经分块（段落级，512 tokens/块）→ 第一轮逐块实体提取 → 第二轮全局关联分析 → 第三轮整合推荐。产出结构化字段（技术实体、工具提及、应用场景），支持按块级检索精确定位具体段落。
+
+**核心数据流：** `采集 → 消息队列 → 分块 → 多轮 AI 抽取 → 数据湖 → 数仓建模 → 块级向量检索 → 展示`
 
 ---
 
 ## 系统架构
 
 ```
-采集层 ──push──→ Kafka ──poll──→ 流处理 ──→ AI 增强 ──→ OSS 数据湖
-  6 scraper               batch=10    清洗+分类     GLM-5.1      Parquet
+采集层 ──push──→ Kafka ──poll──→ 流处理 ──→ AI 处理管线 ──→ OSS 数据湖
+  6 scraper               batch=10    清洗+分类      │             Parquet
+                                                    │                │
+                                        ┌───────────┴──────────┐     │
+                                        │    AI 处理管线 (v2)   │     │
+                                        │                      │     │
+                                        │  分块(chunker.py)     │     │
+                                        │  ├─ HN: 按段落分割    │     │
+                                        │  ├─ Reddit: 正文+评论 │     │
+                                        │  └─ GitHub: 按章节    │     │
+                                        │       ↓              │     │
+                                        │ Round1: 逐块实体提取  │     │
+                                        │  (tech_entities,     │     │
+                                        │   tool_mentions,     │     │
+                                        │   topic, difficulty) │     │
+                                        │       ↓              │     │
+                                        │ Round2: 关联分析     │     │
+                                        │  (use_cases,         │     │
+                                        │   related_tech,      │     │
+                                        │   key_insights)      │     │
+                                        │       ↓              │     │
+                                        │ Round3: 整合推荐     │     │
+                                        │  (tools_recommended, │     │
+                                        │   my_project_         │     │
+                                        │   relevance)         │     │
+                                        └──────────────────────┘     │
                                                                     │
                                                        OSS → MaxCompute → dbt run → dbt test
-                                                         每 300s 同步    staging→int→marts 38个测试
+                                                         每 300s 同步    42 个质量测试
                                                                     │
                                                             ┌───────┴───────┐
                                                             │               │
-                                                     Streamlit          Qdrant
-                                                   Timeline/KPI      向量语义检索
-                                                   AI 助手 RAG       425+ 向量
-                                                                    HNSW O(log n)
+                                                     Streamlit          Qdrant (块级)
+                                                   Timeline/KPI      HNSW O(log n)
+                                                   AI 助手 RAG       payload 块级过滤
+                                                                    支持段落级检索
                                                                     │
                                                             Prometheus + Grafana
                                                             3 端点 → 9 面板 → 9 告警规则
@@ -61,13 +87,16 @@ TechPulse AI 从 6 个技术源（Hacker News、Reddit、GitHub Trending、Dev.t
 | 数据建模 | dbt (dbt-mc) | ODS → DWD → DWS → ADS 分层建模，版本控制 |
 | 调度编排 | Bash + while True（规划 Airflow） | 定时同步 + dbt run |
 
-### AI 管线
+### AI 管线（多轮知识抽取）
 
 | 类别 | 技术 | 用途 |
 |------|------|------|
-| LLM 推理 | DashScope / GLM-5.1 | 文章分类、摘要生成、深度洞察 |
-| 文本嵌入 | DashScope / text-embedding-v2 | 1536 维向量，RAG 检索底座 |
-| 向量数据库 | Qdrant | HNSW 近似检索，O(n) → O(log n) |
+| 文档分块 | `chunker.py`（自研）| 按来源类型路由（段落/Reddit/GitHub），512 tokens/块，overlap 64 |
+| 第一轮提取 | DashScope / GLM-5.1 (temp=0.1) | 逐块提取技术实体、工具提及、主题、难度 |
+| 第二轮关联 | DashScope / GLM-5.1 (temp=0.3) | 全文章关联分析，抽取应用场景、相关技术、核心观点 |
+| 第三轮推荐 | DashScope / GLM-5.1 (temp=0.5) | 整合推荐：工具推荐 + 项目关联度评估 |
+| 文本嵌入 | DashScope / text-embedding-v2 | 1536 维向量，每块独立 embedding |
+| 向量数据库 | Qdrant | HNSW 近似检索，块级 payload 过滤 |
 | 质量校验 | 自研 5 维度校验 | 缺失率/分类/JSON/幻觉 → Prometheus Gauge |
 
 ### 监控 & 基础设施
@@ -163,9 +192,10 @@ techpulse-ai/
 ## 项目亮点（面试可讲）
 
 - **全链路数据工程**：采集 → Kafka → AI 增强 → 数据湖 → 数仓建模 → 服务展示 → 监控告警
+- **多轮 AI 知识抽取**：分块 → 逐块实体提取 → 关联分析 → 整合推荐，替代传统单次摘要调用
+- **块级语义检索**：Qdrant 按段落级索引，用户搜"Kafka partition"能命中长文中的具体段落而非整篇文章
+- **结构化知识字段**：技术实体、工具提及、应用场景的独立 JSON 字段，可 SQL 检索："WHERE tech_entities LIKE '%Kafka%'"
 - **dbt 分层建模**：ODS → DWD → DWS → ADS 完整分层，42 个数据质量测试
-- **AI 增强管线**：GLM-5.1 实时分类 + 5 维度质量校验 + 幻觉检测
-- **向量语义检索**：Qdrant HNSW 替代 O(n) 暴力扫描，425+ 文章向量
 - **实时可观测性**：Prometheus 3 端点 + Grafana 9 面板 + 9 告警规则
 - **成本意识**：Token 计费追踪、MaxCompute 扫描量监控
 
