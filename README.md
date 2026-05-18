@@ -1,26 +1,176 @@
-# TechPulse AI
 
-> **智能技术新闻数据平台** — 包含数据采集、流处理、AI 增强、数仓建模、向量检索与监控告警的数据工程项目。
+<div align="center">
 
-本仓库的主要项目代码位于 `mage-ai/` 目录下。跳转查看完整文档：
+# TechPulse AI ⬛
 
-➡️ **[mage-ai/README.md](mage-ai/README.md)**
+**AI 增强的数据工程平台** — 数据采集 · 流处理 · AI 分类 · 数仓建模 · 语义检索 · 全链路监控
+
+[![Kafka](https://img.shields.io/badge/Message_Queue-Kafka-231F20?logo=apache-kafka)](https://kafka.apache.org/)
+[![dbt](https://img.shields.io/badge/Data_Modeling-dbt-FF694B?logo=dbt)](https://www.getdbt.com/)
+[![DashScope](https://img.shields.io/badge/AI_Enhancement-DashScope-1677FF)](https://dashscope.aliyun.com/)
+[![Qdrant](https://img.shields.io/badge/Vector_DB-Qdrant-red)](https://qdrant.tech/)
+[![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-FF4B4B?logo=streamlit)](https://streamlit.io/)
+[![Prometheus](https://img.shields.io/badge/Monitoring-Prometheus-E6522C?logo=prometheus)](https://prometheus.io/)
+[![Grafana](https://img.shields.io/badge/Dashboard-Grafana-F46800?logo=grafana)](https://grafana.com/)
+[![MaxCompute](https://img.shields.io/badge/Data_Warehouse-MaxCompute-FF6A00)](https://www.alibabacloud.com/product/maxcompute)
+
+</div>
 
 ---
 
-## 目录结构
+## 项目简介
+
+TechPulse AI 从 6 个技术源（Hacker News、Reddit、GitHub Trending、Dev.to、Lobsters、RSS）实时采集技术新闻，经过 Kafka 流处理 → AI 自动分类和摘要 → OSS 数据湖 → MaxCompute 数仓 → dbt 分层建模 → Qdrant 语义检索 → Streamlit 前端展示的完整数据链路。
+
+**核心数据流：** `采集 → 消息队列 → AI 增强 → 数据湖 → 数仓建模 → 服务供数 → 展示`
+
+---
+
+## 系统架构
 
 ```
-/
-├── mage-ai/                  ← 主项目代码
-│   ├── docker-compose.yml    ← 7 容器编排
-│   ├── producer/             ← 多源采集器
-│   ├── techpulse_intelligence/ ← 流处理 + AI + 质量
-│   ├── techpulse_dbt/        ← dbt 数仓建模
-│   ├── frontend/             ← Streamlit 前端
-│   ├── prometheus/           ← 监控配置
-│   ├── grafana/              ← 仪表盘 + 告警
-│   └── docs/                 ← 设计文档
-├── terraform/                ← 阿里云基础设施
-└── README.md                 ← 本文档
+采集层 ──push──→ Kafka ──poll──→ 流处理 ──→ AI 增强 ──→ OSS 数据湖
+  6 scraper               batch=10    清洗+分类     GLM-5.1      Parquet
+                                                                    │
+                                                       OSS → MaxCompute → dbt run → dbt test
+                                                         每 300s 同步    staging→int→marts 38个测试
+                                                                    │
+                                                            ┌───────┴───────┐
+                                                            │               │
+                                                     Streamlit          Qdrant
+                                                   Timeline/KPI      向量语义检索
+                                                   AI 助手 RAG       425+ 向量
+                                                                    HNSW O(log n)
+                                                                    │
+                                                            Prometheus + Grafana
+                                                            3 端点 → 9 面板 → 9 告警规则
 ```
+
+---
+
+## 技术栈
+
+### 数据管道
+
+| 类别 | 技术 | 用途 |
+|------|------|------|
+| 消息队列 | Apache Kafka (KRaft) | 采集与加工解耦，单节点多源缓冲 |
+| 流处理 | Python KafkaConsumer | 批量消费（batch=10），异常处理 + 死信 |
+| 数据湖 | Alibaba OSS (Parquet) | 原始/加工数据存储，按 ds 分区 |
+| 数据仓库 | Alibaba MaxCompute | MPP 数仓，分区表，每日增量 |
+| 数据建模 | dbt (dbt-mc) | ODS → DWD → DWS → ADS 分层建模，版本控制 |
+| 调度编排 | Bash + while True（规划 Airflow） | 定时同步 + dbt run |
+
+### AI 管线
+
+| 类别 | 技术 | 用途 |
+|------|------|------|
+| LLM 推理 | DashScope / GLM-5.1 | 文章分类、摘要生成、深度洞察 |
+| 文本嵌入 | DashScope / text-embedding-v2 | 1536 维向量，RAG 检索底座 |
+| 向量数据库 | Qdrant | HNSW 近似检索，O(n) → O(log n) |
+| 质量校验 | 自研 5 维度校验 | 缺失率/分类/JSON/幻觉 → Prometheus Gauge |
+
+### 监控 & 基础设施
+
+| 类别 | 技术 | 用途 |
+|------|------|------|
+| 指标采集 | Prometheus | 3 个 scrape 端点 (8001/8002/8003)，15s 间隔 |
+| 可视化 | Grafana | 9 监控面板 + 9 告警规则 |
+| 基础设施 | Docker Compose (7 容器) + Terraform | 本地部署 + 云资源管理 |
+| 前端 | Streamlit | 3 页面：时间线 / 收藏 / AI 助手 |
+
+---
+
+## 数仓分层
+
+| dbt 目录 | 分层 | 说明 | 物化 |
+|----------|------|------|------|
+| `sources.yml` | **ODS** | 原始数据接入 | 外部表引用 |
+| `staging/` | **DWD** | 字段清洗、类型转换、分区裁剪 | view |
+| `intermediate/` | **DWD** | **8 种窗口函数**特征衍生（SQL 面试考点）| table |
+| `marts/` | **DWS/ADS** | 星型模型事实表 + ROLLUP + 滑动平均 | table |
+
+### dbt 数据质量
+
+| 校验项 | 数量 | 方式 |
+|--------|------|------|
+| 主键唯一性 | 6 个模型 | `unique` test |
+| 非空约束 | 15+ 字段 | `not_null` test |
+| 枚举值校验 | 5 组 | `accepted_values` test |
+| 业务断言 | 5 条 | 自定义 singular test |
+| **总计** | **42 个 test** | **32 PASS / 8 WARN / 2 ERROR** |
+
+---
+
+## 快速开始
+
+### 环境要求
+
+- Docker Engine 24+ & Docker Compose
+- 4GB+ 可用 RAM
+- 阿里云 DashScope API Key（试用可用）
+
+### 启动
+
+```bash
+cd mage-ai
+
+# 1. 配置环境变量
+cp .env.example .env
+# 编辑 .env 填入你的阿里云 AK / DashScope Key
+
+# 2. 启动全部服务
+docker compose up -d
+
+# 3. 查看运行状态
+docker compose ps
+```
+
+### 访问
+
+| 服务 | 地址 | 说明 |
+|------|------|------|
+| Streamlit 前端 | http://localhost:8501 | 主界面 |
+| Prometheus | http://localhost:9090 | 指标查询 |
+| Grafana | http://localhost:3000 (admin/admin) | 监控面板 |
+| Qdrant | http://localhost:6333/dashboard | 向量数据库 |
+
+---
+
+## 项目结构
+
+```
+techpulse-ai/
+├── mage-ai/                          # 主项目
+│   ├── docker-compose.yml            # 7 容器编排
+│   ├── producer/                     # 6 个爬虫 + Kafka push
+│   ├── techpulse_intelligence/       # 流处理 + AI + 质量 + 死信
+│   │   ├── kafka_consumer.py         # 核心管道
+│   │   ├── transformers/             # AI 增强 (billowing_hill.py)
+│   │   ├── data_quality/             # 5 维度校验 + 死信队列
+│   │   └── oss_to_mc_runner.py       # OSS → MaxCompute → dbt
+│   ├── techpulse_dbt/                # dbt 数仓分层（7 模型 42 test）
+│   ├── frontend/                     # Streamlit + Qdrant RAG
+│   ├── prometheus/                   # 监控配置
+│   ├── grafana/                      # 面板 + 告警
+│   └── docs/                         # 指标体系 / 设计文档 / 学习清单
+├── terraform/                        # 阿里云 OSS + 权限声明
+└── README.md
+```
+
+---
+
+## 项目亮点（面试可讲）
+
+- **全链路数据工程**：采集 → Kafka → AI 增强 → 数据湖 → 数仓建模 → 服务展示 → 监控告警
+- **dbt 分层建模**：ODS → DWD → DWS → ADS 完整分层，42 个数据质量测试
+- **AI 增强管线**：GLM-5.1 实时分类 + 5 维度质量校验 + 幻觉检测
+- **向量语义检索**：Qdrant HNSW 替代 O(n) 暴力扫描，425+ 文章向量
+- **实时可观测性**：Prometheus 3 端点 + Grafana 9 面板 + 9 告警规则
+- **成本意识**：Token 计费追踪、MaxCompute 扫描量监控
+
+---
+
+## 许可证
+
+MIT
