@@ -26,10 +26,10 @@ def get_rag_response(query, df, df_trend=None, messages=None):
         return f"向量生成失败：{q_emb_resp.message}"
     q_embedding = q_emb_resp.output['embeddings'][0]['embedding']
 
-    # 2. Qdrant 语义检索 — O(log n) HNSW，替代原 O(n·d) 全表扫描
-    top_results = vector_store.search(q_embedding, top_k=5)
+    # 2. Qdrant 块级语义检索 — 返回匹配的具体段落（非整篇文章）
+    top_results = vector_store.search_blocks(q_embedding, top_k=5)
     context = "\n\n".join(
-        f"【{r['category']}】{r['title']}\n{r['summary']}"
+        f"【{r['title']}】\n{r.get('block_preview', '')}\n（来源：{r['source']}，相关度：{r['score']:.2f}）"
         for r in top_results
     ) if top_results else "暂无相关文章"
 

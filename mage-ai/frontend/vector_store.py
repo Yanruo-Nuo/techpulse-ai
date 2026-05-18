@@ -91,6 +91,91 @@ class VectorStore:
             for h in hits
         ]
 
+    def upsert_chunks(self, article_records: list[dict], chunk_embeddings: list[list[float]]) -> int:
+        """块级 upsert：一篇文章对应多个 chunk，每个 chunk 独立向量 + payload
+
+        Args:
+            article_records: 文章元数据列表（title, source, url, ai_chunks 等）
+            chunk_embeddings: 展平后的所有 chunk embedding 列表
+
+        Returns:
+            int: 写入的向量总数
+        """
+        points = []
+        idx = 0
+        for article in article_records:
+            chunks = article.get("ai_chunks", [])
+            if not chunks:
+                # 无分块时写入一条空向量（保持文章可检索）
+                points.append(
+                    PointStruct(
+                        id=abs(hash(article.get("id", article.get("title", "")))) % (2**63),
+                        vector=chunk_embeddings[idx] if idx < len(chunk_embeddings) else [0.0] * VECTOR_DIM,
+                        payload={
+                            "title": article.get("title", ""),
+                            "source": article.get("source", ""),
+                            "url": article.get("url", ""),
+                            "block_index": -1,
+                            "block_type": "article",
+                            "block_preview": (article.get("ai_summary") or article.get("title", ""))[:200],
+                            "type": "article",
+                        },
+                    )
+                )
+                idx += 1
+                continue
+
+            for chunk in chunks:
+                emb = chunk_embeddings[idx] if idx < len(chunk_embeddings) else [0.0] * VECTOR_DIM
+                points.append(
+                    PointStruct(
+                        id=abs(hash(f"{article.get('id', article.get('title', ''))}_{chunk['block_index']}")) % (2**63),
+                        vector=emb,
+                        payload={
+                            "title": article.get("title", ""),
+                            "source": article.get("source", ""),
+                            "url": article.get("url", ""),
+                            "block_index": chunk.get("block_index", -1),
+                            "block_type": chunk.get("block_type", "paragraph"),
+                            "block_preview": chunk.get("text", "")[:200],
+                            "type": "block",
+                        },
+                    )
+                )
+                idx += 1
+
+        if points:
+            self.client.upsert(collection_name=COLLECTION_NAME, wait=True, points=points)
+        return len(points)
+
+    def search_blocks(
+        self, query_embedding: list[float], top_k: int = 5,
+    ) -> list[dict]:
+        """块级语义检索 — 返回匹配的具体段落
+
+        与 search() 不同：
+          - 不按文章过滤，直接按块相似度排序
+          - 返回结果包含 block_index 和 block_preview
+          - 同一篇文章可能多次出现（多个匹配段落）
+        """
+        hits = self.client.search(
+            collection_name=COLLECTION_NAME,
+            query_vector=query_embedding,
+            limit=top_k,
+        )
+        return [
+            {
+                "title": h.payload.get("title", ""),
+                "score": h.score,
+                "source": h.payload.get("source", ""),
+                "url": h.payload.get("url", ""),
+                "block_index": h.payload.get("block_index", -1),
+                "block_type": h.payload.get("block_type", ""),
+                "block_preview": h.payload.get("block_preview", ""),
+            }
+            for h in hits
+        ]
+
     def count(self) -> int:
         """返回向量库中文档总数"""
         return self.client.get_collection(COLLECTION_NAME).points_count

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 sys.path.insert(0, os.path.dirname(__file__))
 from transformers.quixotic_illusion import transform_fetch
-from transformers.billowing_hill import transform_ai
+from transformers.billowing_hill import transform_ai, transform_ai_v2
 from data_exporters.insightful_resonance import UnifiedSink
 
 from kafka import KafkaConsumer
@@ -108,6 +108,13 @@ def _run_loop(consumer, sink):
                         fetch_result = transform_fetch(batch)
                         ai_result = transform_ai(fetch_result)
 
+                        # v2: 多轮 AI 抽取（在原始 AI 处理后追加深度分析）
+                        for article in ai_result:
+                            article_v2 = transform_ai_v2(article)
+                            if article_v2.get("ai_analysis_v2"):
+                                article["ai_analysis_v2"] = article_v2["ai_analysis_v2"]
+                                article["ai_chunks"] = article_v2.get("ai_chunks", [])
+
                         # AI 输出质量校验
                         dq_checks = validate_batch(ai_result)
                         report_metrics(dq_checks)
@@ -144,6 +151,13 @@ def _run_loop(consumer, sink):
             try:
                 fetch_result = transform_fetch(batch)
                 ai_result = transform_ai(fetch_result)
+
+                # v2: 多轮 AI 抽取（flush 批次）
+                for article in ai_result:
+                    article_v2 = transform_ai_v2(article)
+                    if article_v2.get("ai_analysis_v2"):
+                        article["ai_analysis_v2"] = article_v2["ai_analysis_v2"]
+                        article["ai_chunks"] = article_v2.get("ai_chunks", [])
 
                 dq_checks = validate_batch(ai_result)
                 report_metrics(dq_checks)
