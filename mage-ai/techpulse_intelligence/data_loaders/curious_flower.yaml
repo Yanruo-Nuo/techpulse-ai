@@ -1,0 +1,5 @@
+connector_type: kafka
+bootstrap_server: "kafka:9092"
+topic: tech_news
+consumer_group: techpulse_consumer
+batch_size: 10 # 每次流过多少条进行一次 AI 总结

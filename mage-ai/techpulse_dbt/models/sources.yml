@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: raw
+    database: techpulse_dw
+    schema: default  # 原始表所在的 schema
+    tables:
+      - name: hn_raw

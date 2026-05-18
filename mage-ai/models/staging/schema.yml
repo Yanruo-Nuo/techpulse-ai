@@ -1,0 +1,16 @@
+version: 2
+
+models:
+  - name: stg_tech_news
+    description: "清洗后的技术新闻 AI 分析数据"
+    columns:
+      - name: id
+        description: "新闻唯一 ID"
+        tests:
+          - unique
+          - not_null
+      - name: tech_category
+        description: "AI 分类标签"
+        tests:
+          - accepted_values:
+              values: ['AI/ML', 'CloudNative', 'Programming', 'Security', 'Others']

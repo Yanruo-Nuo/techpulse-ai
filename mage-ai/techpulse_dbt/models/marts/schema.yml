@@ -1,0 +1,210 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: "日期维度表 — Kimball 星型模型，预计算日期属性"
+    columns:
+      - name: date_key
+        description: "日期键值 (yyyy-mm-dd)"
+        tests:
+          - unique
+          - not_null
+      - name: year
+        description: "年份"
+      - name: month
+        description: "月份 (1-12)"
+      - name: quarter
+        description: "季度 (1-4)"
+      - name: day_of_week
+        description: "星期几 (1=周一, 7=周日)"
+      - name: is_weekend
+        description: "是否周末 (1=是, 0=否)"
+      - name: days_ago
+        description: "距今天数"
+
+  - name: dim_source
+    description: "来源维度表 — SCD Type 2，追踪来源分类与采集方式"
+    columns:
+      - name: dim_source_sk
+        description: "代理键 (MD5)"
+        tests:
+          - unique
+          - not_null
+      - name: source
+        description: "来源名称"
+        tests:
+          - not_null
+          - unique
+      - name: source_type
+        description: "来源分类 (community/blogging/forum/code_repo/media)"
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - community
+                  - blogging
+                  - forum
+                  - code_repo
+                  - media
+                  - other
+      - name: ingestion_method
+        description: "采集方式 (api/web_scrape/rss)"
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - api
+                  - web_scrape
+                  - rss
+      - name: is_current
+        description: "当前有效版本标志 (SCD Type 2)"
+
+  - name: int_article_enriched
+    description: "新闻中间层 — 窗口函数 enrich，面试考点合集"
+    columns:
+      - name: id
+        description: "文章 ID（含 421 条重复，需排查源头）"
+        tests:
+          - unique:
+              config:
+                severity: warn
+          - not_null
+      - name: source
+        description: "来源"
+        tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: title
+        description: "文章标题"
+        tests:
+          - not_null
+      - name: score
+        description: "文章分数"
+      - name: tech_category
+        description: "技术分类"
+      - name: rn_score_desc
+        description: "来源内分数降序排名 (ROW_NUMBER)"
+      - name: global_rank
+        description: "全局排名 (RANK)"
+      - name: score_tier
+        description: "分数段 (high/medium/low/unscored)"
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - high
+                  - medium
+                  - low
+                  - unscored
+      - name: is_ai_related
+        description: "是否 AI 相关"
+
+  - name: fact_article
+    description: "新闻事实表 — 关联 dim_source，含可加性度量"
+    columns:
+      - name: fact_article_sk
+        description: "事实代理键"
+        tests:
+          - unique:
+              config:
+                severity: warn
+          - not_null
+      - name: article_id
+        description: "文章业务 ID"
+        tests:
+          - not_null
+          - unique:
+              config:
+                severity: warn
+      - name: dim_source_sk
+        description: "来源维度外键"
+        tests:
+          - not_null:
+              config:
+                severity: warn
+          - relationships:
+              arguments:
+                to: ref('dim_source')
+                field: dim_source_sk
+      - name: title
+        description: "文章标题"
+        tests:
+          - not_null
+      - name: url
+        description: "文章 URL"
+        tests:
+          - not_null
+      - name: source
+        description: "来源"
+        tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: tech_category
+        description: "技术分类"
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - AI/ML
+                  - CloudNative
+                  - Programming
+                  - Security
+                  - DataEngineering
+                  - Hardware
+                  - Others
+      - name: score
+        description: "文章分数"
+      - name: ds
+        description: "数据分区"
+        tests:
+          - not_null
+      - name: is_ai_related
+        description: "是否 AI 相关"
+
+  - name: mart_daily_summary
+    description: "每日汇总 — ROLLUP 分层聚合 + 7日滑动平均 + 环比"
+    columns:
+      - name: ds
+        description: "日期分区"
+        tests:
+          - not_null
+      - name: granularity
+        description: "汇总粒度 (total/by_source_type/by_source/by_source_category)"
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - total
+                  - by_source_type
+                  - by_source
+                  - by_source_category
+      - name: article_cnt
+        description: "文章数"
+        tests:
+          - not_null
+      - name: avg_score
+        description: "平均分"
+      - name: ai_penetration_pct
+        description: "AI 渗透率百分比"
+      - name: ma7_article_cnt
+        description: "7日滑动平均文章数"
+      - name: wow_change_pct
+        description: "环比变化百分比"
+
+  - name: mart_trend_analysis
+    description: "趋势分析表 — 每日分类排行"
+    columns:
+      - name: ds
+        description: "日期"
+        tests:
+          - not_null
+      - name: tech_category
+        description: "技术分类"
+        tests:
+          - not_null
+      - name: daily_cnt
+        description: "当日文章数"
+      - name: rank_in_day
+        description: "当日分类排名"

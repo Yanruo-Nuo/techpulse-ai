@@ -1,0 +1,9 @@
+connector_type: kafka
+# 确保没有引号包裹或者使用了正确的双引号
+bootstrap_server: "kafka:9092"
+topic: raw_tech_feeds
+consumer_group: mage_consumer_group
+batch_size: 100
+# 关键修复：显式指定 API 版本，防止客户端因为探测版本而超时
+api_version: "3.5.0"
+security_protocol: PLAINTEXT

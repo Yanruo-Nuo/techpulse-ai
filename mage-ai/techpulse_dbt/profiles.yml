@@ -1,0 +1,11 @@
+techpulse_dbt:
+  target: dev
+  outputs:
+    dev:
+      type: maxcompute
+      access_key_id: "{{ env_var('ALIBABA_CLOUD_ACCESS_KEY_ID') }}"
+      access_key_secret: "{{ env_var('ALIBABA_CLOUD_ACCESS_KEY_SECRET') }}"
+      project: techpulse_dw          # 项目
+      schema: default               # 指向你在 MaxCompute 中已创建的 schema
+      endpoint: http://service.cn-hongkong.maxcompute.aliyun.com/api
+      threads: 4

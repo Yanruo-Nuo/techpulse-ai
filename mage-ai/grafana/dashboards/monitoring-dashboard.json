@@ -1,0 +1,150 @@
+{
+  "title": "TechPulse AI Monitoring",
+  "tags": ["techpulse"],
+  "schemaVersion": 36,
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "panels": [
+    {
+      "title": "AI Token 消耗趋势",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(ai_token_usage_total[5m])",
+          "legendFormat": "{{model}} {{operation}}"
+        }
+      ]
+    },
+    {
+      "title": "当日 Token 总量",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 3, "w": 4, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(increase(ai_token_usage_total[24h]))",
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "none" }
+        }
+      }
+    },
+    {
+      "title": "MaxCompute 扫描量",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "expr": "rate(mc_query_scanned_bytes[5m]) or vector(0)",
+          "legendFormat": "scanned"
+        }
+      ]
+    },
+    {
+      "title": "429 触发计数",
+      "type": "bargauge",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 6 },
+      "targets": [
+        {
+          "expr": "rate(ai_rate_limit_hits_total[5m]) or vector(0)"
+        }
+      ]
+    },
+    {
+      "title": "AI 字段缺失率",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
+      "targets": [
+        {
+          "expr": "dq_ai_summary_missing_ratio",
+          "legendFormat": "摘要缺失"
+        },
+        {
+          "expr": "dq_ai_category_missing_ratio",
+          "legendFormat": "分类缺失"
+        }
+      ]
+    },
+    {
+      "title": "Others 占比",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 8, "x": 12, "y": 17 },
+      "targets": [
+        {
+          "expr": "dq_others_category_ratio",
+          "legendFormat": "Others占比"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0.3 },
+              { "color": "red", "value": 0.4 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "端到端延迟",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 25 },
+      "targets": [
+        {
+          "expr": "pipeline_e2e_latency_seconds",
+          "legendFormat": "{{source}}"
+        }
+      ]
+    },
+    {
+      "title": "Kafka 消费积压",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 25 },
+      "targets": [
+        {
+          "expr": "kafka_consume_lag",
+          "legendFormat": "partition {{partition}}"
+        }
+      ]
+    },
+    {
+      "title": "OSS 写入耗时",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 33 },
+      "targets": [
+        {
+          "expr": "oss_write_duration_seconds_sum / oss_write_duration_seconds_count",
+          "legendFormat": "avg"
+        }
+      ]
+    },
+    {
+      "title": "爬虫采集延迟",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 33 },
+      "targets": [
+        {
+          "expr": "crawler_produce_lag_seconds",
+          "legendFormat": "{{source}}"
+        }
+      ]
+    }
+  ]
+}

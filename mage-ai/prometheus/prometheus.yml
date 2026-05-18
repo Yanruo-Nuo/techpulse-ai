@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'news-crawler'
+    static_configs:
+      - targets: ['news-crawler:8001']
+
+  - job_name: 'orchestrator'
+    static_configs:
+      - targets: ['magic:8002']
+
+  - job_name: 'orchestrator-sync'
+    static_configs:
+      - targets: ['magic:8004']
+  - job_name: 'tech-frontend'
+    static_configs:
+      - targets: ['tech-frontend:8003']

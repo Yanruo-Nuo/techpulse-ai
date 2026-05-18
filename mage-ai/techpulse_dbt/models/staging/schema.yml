@@ -1,0 +1,55 @@
+# /home/src/techpulse_dbt/models/staging/schema.yml
+version: 2
+
+models:
+  - name: stg_tech_news
+    description: "清洗后的技术新闻 AI 分析数据"
+    columns:
+      - name: id
+        description: "新闻 ID（staging 层可能重复，需在中间层去重）"
+        tests:
+          - not_null
+          - unique:
+              config:
+                severity: warn
+      - name: url
+        description: "文章 URL"
+        tests:
+          - not_null
+      - name: source
+        description: "来源名称（hn_raw 中部分数据 source 为空，标记为 warn）"
+        tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: title
+        description: "文章标题"
+        tests:
+          - not_null
+      - name: score
+        description: "文章热度分"
+      - name: ai_summary
+        description: "AI 生成的技术摘要"
+      - name: ai_insight
+        description: "AI 深度洞察"
+      - name: tech_category
+        description: "AI 生成的技术分类标签"
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - AI/ML
+                  - CloudNative
+                  - Programming
+                  - Security
+                  - DataEngineering
+                  - Hardware
+                  - Others
+      - name: ds
+        description: "数据日期分区"
+        tests:
+          - not_null
+      - name: created_at
+        description: "入库时间"
+        tests:
+          - not_null

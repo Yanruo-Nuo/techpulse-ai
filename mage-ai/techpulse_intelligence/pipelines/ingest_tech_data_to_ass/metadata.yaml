@@ -1,0 +1,91 @@
+blocks:
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - quixotic_illusion
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: yaml
+  name: ancient silence
+  retry_config: null
+  status: updated
+  timeout: null
+  type: data_loader
+  upstream_blocks: []
+  uuid: ancient_silence
+- all_upstream_blocks_executed: false
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - billowing_hill
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: quixotic illusion
+  retry_config: null
+  status: updated
+  timeout: null
+  type: transformer
+  upstream_blocks:
+  - ancient_silence
+  uuid: quixotic_illusion
+- all_upstream_blocks_executed: false
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - insightful_resonance
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: billowing hill
+  retry_config: null
+  status: updated
+  timeout: null
+  type: transformer
+  upstream_blocks:
+  - quixotic_illusion
+  uuid: billowing_hill
+- all_upstream_blocks_executed: false
+  color: null
+  configuration: {}
+  downstream_blocks: []
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: insightful resonance
+  retry_config: null
+  status: updated
+  timeout: null
+  type: data_exporter
+  upstream_blocks:
+  - billowing_hill
+  uuid: insightful_resonance
+cache_block_output_in_memory: false
+callbacks: []
+concurrency_config: {}
+conditionals: []
+created_at: '2026-04-02 08:38:20.603458+00:00'
+data_integration: null
+description: null
+executor_config: {}
+executor_count: 1
+executor_type: null
+extensions: {}
+name: ingest_tech_data-to_ass
+notification_config: {}
+remote_variables_dir: null
+retry_config: {}
+run_pipeline_in_one_process: false
+settings:
+  triggers: null
+spark_config: {}
+tags: []
+type: streaming
+uuid: ingest_tech_data_to_ass
+variables_dir: /home/src/mage_data/techpulse_intelligence
+widgets: []

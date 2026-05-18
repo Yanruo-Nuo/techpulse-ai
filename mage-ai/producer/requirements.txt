@@ -1,0 +1,6 @@
+requests
+confluent-kafka
+feedparser
+beautifulsoup4
+lxml
+prometheus-client

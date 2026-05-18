@@ -1,0 +1,43 @@
+# 环境变量（含 API Key / Secret）
+.env
+.env.local
+*.env
+
+# Reasonix / Claude 配置
+.reasonix/
+.claude/
+
+# 日志
+logs/*.log
+logs/*.jsonl
+logs/dead_letter.jsonl
+
+# dbt 编译产物
+techpulse_dbt/target/
+techpulse_dbt/dbt_packages/
+techpulse_dbt/logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Mage AI
+mage_data/
+.file_versions/
+
+# Vector store / 缓存
+*.parquet
+*.csv
+.cache/
+
+# 系统
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,209 @@
+apiVersion: 1
+
+groups:
+  - name: TechPulse AI Alerts
+    folder: TechPulse AI
+    interval: 30s
+    rules:
+      - uid: techpulse_crawler_cooldown
+        title: "爬虫冷却中"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: crawler_in_cooldown == 1
+        noData: NoData
+        execErr: Error
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "爬虫冷却中超过 5 分钟"
+
+      - uid: techpulse_crawler_stalled
+        title: "爬虫停止"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: time() - crawler_last_success_timestamp > 900
+        noData: NoData
+        execErr: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: "爬虫超过 15 分钟未成功运行"
+
+      - uid: techpulse_others_spike
+        title: "Others 分类占比过高"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: dq_others_category_ratio > 0.4
+        noData: NoData
+        execErr: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: "Others 分类占比超过 40%"
+
+      - uid: techpulse_summary_missing
+        title: "AI 摘要缺失率高"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: dq_ai_summary_missing_ratio > 0.2
+        noData: NoData
+        execErr: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: "AI 摘要缺失率超过 20%"
+
+      - uid: techpulse_mc_sync_failed
+        title: "MaxCompute 同步失败"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: mc_sync_success == 0
+        noData: NoData
+        execErr: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: "MaxCompute 同步失败"
+
+      - uid: techpulse_e2e_latency_high
+        title: "端到端延迟过高"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: pipeline_e2e_latency_seconds > 3600
+        noData: NoData
+        execErr: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: "端到端延迟超过 1 小时"
+
+      - uid: techpulse_kafka_lag_high
+        title: "Kafka 消费积压"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: kafka_consume_lag > 1000
+        noData: NoData
+        execErr: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka 积压超过 1000 条"
+
+      - uid: techpulse_ai_hallucination
+        title: "AI 幻觉率高"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: dq_ai_hallucination_ratio > 0.1
+        noData: NoData
+        execErr: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "AI 幻觉率超过 10% — 可能有大量劣质数据入库"
+
+      - uid: techpulse_json_parse_fail
+        title: "AI JSON 解析失败率高"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: dq_json_parse_fail_ratio > 0.2
+        noData: NoData
+        execErr: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "AI JSON 解析失败率超过 20% — GLM-5.1 输出可能异常"
+
+      - uid: techpulse_dlq_accumulated
+        title: "死信队列积压"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: dlq_pending_total > 0
+        noData: NoData
+        execErr: Error
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "死信队列中有待重试批次 — 检查 pipeline 错误日志"
+
+      - uid: techpulse_dlq_written
+        title: "死信记录已写入"
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: rate(dlq_records_total[5m]) > 0
+        noData: NoData
+        execErr: Error
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "过去 5 分钟有死信记录写入 — 管道可能持续异常"

@@ -1,0 +1,11 @@
+# Terraform state（含敏感信息）
+*.tfstate
+*.tfstate.backup
+*.terraform.lock.hcl
+
+# Terraform 插件缓存
+.terraform/
+
+# 本地变量文件
+terraform.tfvars
+*.auto.tfvars

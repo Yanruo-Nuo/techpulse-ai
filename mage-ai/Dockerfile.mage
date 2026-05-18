@@ -1,0 +1,24 @@
+FROM mageai/mageai:latest
+
+# 1. 安装业务 SDK（在这里加上 dashvector）
+# 这些包安装在 Mage 的主环境中，供流式管道 (Streaming Pipeline) 里的 Python 块使用
+RUN pip install --no-cache-dir \
+    oss2 \
+    pandas \
+    pyarrow \
+    dashscope \
+    pyodps \
+    dashvector \
+    requests \
+    beautifulsoup4 \
+    lxml \
+    trafilatura \
+    lxml_html_clean
+
+# 2. 在隔离的虚拟环境中安装 dbt-maxcompute (保持不变，防止版本冲突)
+RUN python -m venv /opt/dbt-env && \
+    /opt/dbt-env/bin/pip install --upgrade pip && \
+    /opt/dbt-env/bin/pip install dbt-maxcompute
+
+# 3. 创建链接 (保持不变)
+RUN ln -sf /opt/dbt-env/bin/dbt /usr/local/bin/dbt-mc

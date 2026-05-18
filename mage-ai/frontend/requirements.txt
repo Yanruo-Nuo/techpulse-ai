@@ -1,0 +1,7 @@
+streamlit
+pyodps
+pandas
+plotly
+dashscope
+prometheus-client
+qdrant-client

@@ -1,0 +1,30 @@
+# Reasonix 技能配置
+.reasonix/
+.claude/
+
+# 日志
+logs/
+*.log
+*.jsonl
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# 数据缓存
+*.parquet
+*.csv
+
+# Everything Claude Code（第三方插件）
+mage-ai/everything-claude-code/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
