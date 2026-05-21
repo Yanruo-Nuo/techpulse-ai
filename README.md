@@ -30,6 +30,52 @@ TechPulse AI 从 6 个技术源（Hacker News、Reddit、GitHub Trending、Dev.t
 
 ## 系统架构
 
+---
+
+## 运行指标（真实数据）
+
+### 数据规模
+
+| 指标 | 数值 | 说明 |
+|------|------|------|
+| 总文章数 | **125,801 行** | fact_article 总记录（含多版本） |
+| 唯一文章 | **425 篇** | 去重后的独立文章数 |
+| 数据时间跨度 | **25 天** | 2026-04-15 ~ 2026-05-10 |
+| 活跃分区数 | **7 天** | 有数据写入的 ds 分区 |
+| 日均采集 | **~500 篇/天** | 6 个爬虫综合产出 |
+| 数据源数量 | **6 个** | HN / Reddit / GitHub / Dev.to / Lobsters / RSS |
+
+### 数仓 & dbt
+
+| 表 | 行数 | 说明 |
+|----|------|------|
+| `fact_article` | **125,801** | 事实表 |
+| `int_article_enriched` | **125,801** | 窗口函数宽表 |
+| `mart_daily_summary` | **167** | 每日 ROLLUP 汇总 |
+| `mart_trend_analysis` | **462** | 分类趋势分析 |
+| `dim_source` | **6** | 来源维度 |
+| `dim_date` | **44** | 日期维度 |
+| dbt 模型总数 | **7 个** | staging×1 + intermediate×1 + marts×5 |
+| dbt 数据测试 | **42 个** | 32 PASS / 8 WARN / 2 ERROR |
+
+### 向量检索
+
+| 指标 | 数值 |
+|------|------|
+| Qdrant 向量数 | **425 条** |
+| 向量维度 | 1536（DashScope text-embedding-v2）|
+| 检索算法 | HNSW（O(log n)）|
+
+### 监控
+
+| 指标 | 详情 |
+|------|------|
+| Prometheus 端点 | 3 个（爬虫:8001 / 加工:8002 / 前端:8003）|
+| Grafana 面板 | 9 个 |
+| 告警规则 | 9 条（Critical 4 + Warning 5）|
+
+---
+
 ```
 采集层 ──push──→ Kafka ──poll──→ 流处理 ──→ AI 处理管线 ──→ OSS 数据湖
   6 scraper               batch=10    清洗+分类      │             Parquet
