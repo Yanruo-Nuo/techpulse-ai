@@ -122,18 +122,7 @@
         }
       ]
     },
-    {
-      "title": "OSS 写入耗时",
-      "type": "timeseries",
-      "datasource": "Prometheus",
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 33 },
-      "targets": [
-        {
-          "expr": "oss_write_duration_seconds_sum / oss_write_duration_seconds_count",
-          "legendFormat": "avg"
-        }
-      ]
-    },
+
     {
       "title": "爬虫采集延迟",
       "type": "timeseries",

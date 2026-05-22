@@ -1,31 +1,28 @@
 services:
   # 1. Kafka (KRaft 模式) - 官方镜像在香港秒拉
   kafka:
-    image: bitnami/kafka:3.5
+    image: apache/kafka:latest
     container_name: kafka-kraft
+    hostname: kafka
     environment:
-      - KAFKA_ENABLE_KRAFT=yes
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_NODE_ID=1
-      - KAFKA_KRAFT_CLUSTER_ID=L629Z7UfTty0LTo5f84j8Q
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
-      # JVM 堆内存: KRaft 模式合并 controller+broker，512M 不够
-      - KAFKA_HEAP_OPTS=-Xms512M -Xmx1G
-      # 日志保留策略: 防止日志堆积耗尽磁盘/内存
-      - KAFKA_CFG_LOG_RETENTION_HOURS=24
-      - KAFKA_CFG_LOG_RETENTION_BYTES=1073741824
-      - KAFKA_CFG_LOG_SEGMENT_BYTES=268435456
-      - ALLOW_PLAINTEXT_LISTENER=yes
-    # 容器内存限制: 防止 OOM 杀死其他服务
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_LOG_RETENTION_HOURS=24
+      - KAFKA_LOG_RETENTION_BYTES=1073741824
+      - KAFKA_LOG_SEGMENT_BYTES=268435456
+      - CLUSTER_ID=L629Z7UfTty0LTo5f84j8Q
+    # 容器内存限制
     mem_limit: 2g
     mem_reservation: 1g
     volumes:
-      - kafka_data:/bitnami/kafka
+      - kafka_data:/etc/kafka/data
 
   # 2. 实时采集器 (Producer)
   news-crawler:
