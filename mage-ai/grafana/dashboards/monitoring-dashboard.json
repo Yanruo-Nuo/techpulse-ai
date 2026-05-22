@@ -6,96 +6,142 @@
   "timepicker": {},
   "panels": [
     {
-      "title": "AI Token 消耗趋势",
-      "type": "timeseries",
-      "datasource": "Prometheus",
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 0 },
-      "targets": [
-        {
-          "expr": "rate(ai_token_usage_total[5m])",
-          "legendFormat": "{{model}} {{operation}}"
-        }
-      ]
+      "title": "服务健康",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
     },
     {
-      "title": "当日 Token 总量",
+      "title": "Consumer 存活",
       "type": "stat",
       "datasource": "Prometheus",
-      "gridPos": { "h": 3, "w": 4, "x": 12, "y": 0 },
+      "gridPos": { "h": 3, "w": 4, "x": 0, "y": 1 },
       "targets": [
-        {
-          "expr": "sum(increase(ai_token_usage_total[24h]))",
-          "legendFormat": ""
-        }
+        { "expr": "consumer_alive", "legendFormat": "" }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "title": "Consumer 上次成功",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 3, "w": 4, "x": 4, "y": 1 },
+      "targets": [
+        { "expr": "time() - consumer_last_success_timestamp", "legendFormat": "" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 600 },
+              { "color": "red", "value": 3600 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "title": "管线阶段",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 3, "w": 4, "x": 8, "y": 1 },
+      "targets": [
+        { "expr": "consumer_pipeline_stage", "legendFormat": "" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [
+            { "type": "value", "value": "0", "text": "空闲" },
+            { "type": "value", "value": "1", "text": "抓取中" },
+            { "type": "value", "value": "2", "text": "AI 处理" },
+            { "type": "value", "value": "3", "text": "写入中" }
+          ],
           "color": { "mode": "none" }
         }
       }
     },
     {
-      "title": "MaxCompute 扫描量",
-      "type": "timeseries",
+      "title": "待处理消息数",
+      "type": "stat",
       "datasource": "Prometheus",
-      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 6 },
+      "gridPos": { "h": 3, "w": 4, "x": 12, "y": 1 },
       "targets": [
-        {
-          "expr": "rate(mc_query_scanned_bytes[5m]) or vector(0)",
-          "legendFormat": "scanned"
+        { "expr": "consumer_pending_articles", "legendFormat": "" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "none" }
         }
-      ]
-    },
-    {
-      "title": "429 触发计数",
-      "type": "bargauge",
-      "datasource": "Prometheus",
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 6 },
-      "targets": [
-        {
-          "expr": "rate(ai_rate_limit_hits_total[5m]) or vector(0)"
-        }
-      ]
+      }
     },
     {
       "title": "Kafka 消费积压",
       "type": "timeseries",
       "datasource": "Prometheus",
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 6 },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 1 },
       "targets": [
-        {
-          "expr": "kafka_consume_lag",
-          "legendFormat": "partition {{partition}}"
-        }
+        { "expr": "kafka_consume_lag", "legendFormat": "partition {{partition}}" }
       ]
     },
     {
-      "title": "AI 字段缺失率",
+      "title": "AI Token 消耗趋势",
       "type": "timeseries",
       "datasource": "Prometheus",
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 12 },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 4 },
       "targets": [
-        {
-          "expr": "dq_ai_summary_missing_ratio",
-          "legendFormat": "摘要缺失"
-        },
-        {
-          "expr": "dq_ai_category_missing_ratio",
-          "legendFormat": "分类缺失"
-        }
+        { "expr": "rate(ai_token_usage_total[5m])", "legendFormat": "{{model}} {{operation}}" }
       ]
     },
     {
-      "title": "Others 占比",
+      "title": "爬虫采集延迟",
       "type": "timeseries",
       "datasource": "Prometheus",
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 12 },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 4 },
       "targets": [
-        {
-          "expr": "dq_others_category_ratio",
-          "legendFormat": "Others占比"
-        }
+        { "expr": "crawler_produce_lag_seconds", "legendFormat": "{{source}}" }
+      ]
+    },
+    {
+      "title": "管线指标",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 10 }
+    },
+    {
+      "title": "OSS 写入（计数）",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 3, "w": 4, "x": 0, "y": 11 },
+      "targets": [
+        { "expr": "increase(oss_write_total{status='success'}[1h]) or vector(0)" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "color": { "mode": "none" } }
+      }
+    },
+    {
+      "title": "数据质量 — Others 占比",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 14 },
+      "targets": [
+        { "expr": "dq_others_category_ratio or vector(0)", "legendFormat": "Others占比" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -111,28 +157,81 @@
       }
     },
     {
-      "title": "端到端延迟",
+      "title": "数据质量 — AI 字段缺失率",
       "type": "timeseries",
       "datasource": "Prometheus",
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 18 },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 14 },
       "targets": [
-        {
-          "expr": "pipeline_e2e_latency_seconds",
-          "legendFormat": "{{source}}"
-        }
+        { "expr": "dq_ai_summary_missing_ratio or vector(0)", "legendFormat": "摘要缺失" },
+        { "expr": "dq_ai_category_missing_ratio or vector(0)", "legendFormat": "分类缺失" }
       ]
     },
     {
-      "title": "爬虫采集延迟",
-      "type": "timeseries",
+      "title": "MaxCompute 同步",
+      "type": "stat",
       "datasource": "Prometheus",
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 18 },
+      "gridPos": { "h": 3, "w": 4, "x": 16, "y": 14 },
       "targets": [
-        {
-          "expr": "crawler_produce_lag_seconds",
-          "legendFormat": "{{source}}"
+        { "expr": "mc_sync_success or vector(0)" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
         }
-      ]
+      }
+    },
+    {
+      "title": "429 触发计数",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 3, "w": 4, "x": 20, "y": 14 },
+      "targets": [
+        { "expr": "increase(ai_rate_limit_hits_total[1h]) or vector(0)" },
+        { "expr": "rate(ai_rate_limit_hits_total[5m]) or vector(0)" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "title": "dbt 运行状态",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 3, "w": 4, "x": 0, "y": 20 },
+      "targets": [
+        { "expr": "dbt_run_success or vector(0)" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
     }
   ]
 }

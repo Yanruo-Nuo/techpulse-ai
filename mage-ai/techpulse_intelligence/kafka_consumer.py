@@ -20,6 +20,7 @@ from metrics import (
     oss_write_total, oss_write_bytes, oss_write_duration_seconds,
     kafka_consume_lag
 )
+from health_metrics import start_health_server, set_stage, set_pending, mark_success
 from data_quality.dead_letter import DeadLetterQueue
 from data_quality.validator import validate_batch, report_metrics
 
@@ -28,8 +29,13 @@ POLL_TIMEOUT_MS = 30000
 
 
 def run():
+    # 主管线指标（随管线更新）
     start_http_server(8002)
     logger.info("Metrics HTTP server started on port 8002")
+
+    # 健康指标（独立线程，永远有值）
+    start_health_server(8005)
+    logger.info("Health metrics HTTP server started on port 8005")
 
     consumer = KafkaConsumer(
         "raw_tech_feeds",
@@ -104,8 +110,11 @@ def _run_loop(consumer, sink):
                     buffer = []
                     logger.info(f"Processing batch of {len(batch)} messages")
 
+                    set_pending(len(batch))
                     try:
+                        set_stage(1)  # fetching
                         fetch_result = transform_fetch(batch)
+                        set_stage(2)  # ai
                         ai_result = transform_ai(fetch_result)
 
                         # v2: 多轮 AI 抽取（在原始 AI 处理后追加深度分析）
@@ -119,11 +128,14 @@ def _run_loop(consumer, sink):
                         dq_checks = validate_batch(ai_result)
                         report_metrics(dq_checks)
 
+                        set_stage(3)  # writing
                         _oss_start = time.time()
                         sink.batch_write(ai_result)
                         _oss_dur = time.time() - _oss_start
                         oss_write_duration_seconds.labels(target='hn_raw').observe(_oss_dur)
                         oss_write_total.labels(target='hn_raw', status='success').inc()
+                        mark_success()
+                        set_stage(0)  # idle
                         logger.info(f"Batch done: {len(ai_result)} records written")
 
                         # ✅ 成功后才 commit
@@ -148,8 +160,11 @@ def _run_loop(consumer, sink):
             batch = buffer
             buffer = []
 
+            set_pending(len(batch))
             try:
+                set_stage(1)
                 fetch_result = transform_fetch(batch)
+                set_stage(2)
                 ai_result = transform_ai(fetch_result)
 
                 # v2: 多轮 AI 抽取（flush 批次）
@@ -162,11 +177,14 @@ def _run_loop(consumer, sink):
                 dq_checks = validate_batch(ai_result)
                 report_metrics(dq_checks)
 
+                set_stage(3)
                 _oss_start = time.time()
                 sink.batch_write(ai_result)
                 _oss_dur = time.time() - _oss_start
                 oss_write_duration_seconds.labels(target='hn_raw').observe(_oss_dur)
                 oss_write_total.labels(target='hn_raw', status='success').inc()
+                mark_success()
+                set_stage(0)
                 logger.info(f"Flush done: {len(ai_result)} records written")
 
                 consumer.commit()
