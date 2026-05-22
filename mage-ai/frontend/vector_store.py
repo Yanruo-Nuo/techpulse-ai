@@ -13,6 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "tech_news"
+TECH_ENTITIES = "tech_entities"  # 实体关系三元组 collection
 VECTOR_DIM = 1536  # DashScope text-embedding-v2
 
 
@@ -172,6 +173,98 @@ class VectorStore:
                 "block_index": h.payload.get("block_index", -1),
                 "block_type": h.payload.get("block_type", ""),
                 "block_preview": h.payload.get("block_preview", ""),
+            }
+            for h in hits
+        ]
+
+    # ═══════════════════════════════════════════════════
+    # 实体关系三元组 (tech_entities)
+    # ═══════════════════════════════════════════════════
+
+    def _ensure_entity_collection(self):
+        """幂等创建 entity collection"""
+        collections = self.client.get_collections().collections
+        names = [c.name for c in collections]
+        if TECH_ENTITIES not in names:
+            self.client.create_collection(
+                collection_name=TECH_ENTITIES,
+                vectors_config=VectorParams(size=VECTOR_DIM, distance=Distance.COSINE),
+            )
+            logger.info(f"Created Qdrant collection: {TECH_ENTITIES}")
+
+    def upsert_triples(
+        self,
+        records: list[dict],
+        triples: list[list[dict]],
+        embeddings: list[list[float]],
+    ) -> int:
+        """将实体关系三元组写入 tech_entities collection
+
+        每个三元组是一个独立点，向量 = embedding(实体名 + 关系 + 目标实体名)
+
+        Args:
+            records: 文章元数据列表
+            triples: 每篇文章的三元组列表（与 records 对齐）
+            embeddings: 每个三元组的 embedding（展平）
+
+        Returns:
+            int: 写入的向量总数
+        """
+        self._ensure_entity_collection()
+        points = []
+        idx = 0
+        for article, article_triples in zip(records, triples):
+            for t in article_triples:
+                emb = embeddings[idx] if idx < len(embeddings) else [0.0] * VECTOR_DIM
+                subject = t.get("subject", "")
+                predicate = t.get("predicate", "")
+                obj = t.get("object", "")
+                points.append(
+                    PointStruct(
+                        id=abs(hash(f"triple_{article.get('id', article.get('title', ''))}_{subject}_{obj}")) % (2**63),
+                        vector=emb,
+                        payload={
+                            "subject": subject,
+                            "predicate": predicate,
+                            "object": obj,
+                            "article_title": article.get("title", ""),
+                            "article_url": article.get("url", ""),
+                            "source": article.get("source", ""),
+                        },
+                    )
+                )
+                idx += 1
+
+        if points:
+            self.client.upsert(collection_name=TECH_ENTITIES, wait=True, points=points)
+        return len(points)
+
+    def search_triples(
+        self, query_embedding: list[float], top_k: int = 5
+    ) -> list[dict]:
+        """语义检索实体关系 — O(log n)
+
+        Args:
+            query_embedding: 查询向量 (1536-dim)
+            top_k: 返回 top-k 条关系
+
+        Returns:
+            [{"subject", "predicate", "object", "article_title", "source", "score"}, ...]
+        """
+        self._ensure_entity_collection()
+        hits = self.client.search(
+            collection_name=TECH_ENTITIES,
+            query_vector=query_embedding,
+            limit=top_k,
+        )
+        return [
+            {
+                "subject": h.payload.get("subject", ""),
+                "predicate": h.payload.get("predicate", ""),
+                "object": h.payload.get("object", ""),
+                "article_title": h.payload.get("article_title", ""),
+                "source": h.payload.get("source", ""),
+                "score": h.score,
             }
             for h in hits
         ]

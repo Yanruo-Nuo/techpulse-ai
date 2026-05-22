@@ -32,21 +32,34 @@ def sync_all(mode: str = "auto"):
               "block" — 强制块级，跳过无分块的文章
               "article" — 强制文章级（旧模式）
     """
+    from sync_metrics import sync_total
+    from sync_metrics import sync_duration_seconds as duration
+
     store = VectorStore()
     df = load_news_data()
     if df.empty:
+        sync_total.labels(collection="dwd_user_sessions", status="empty").inc()
         logger.warning("No news data found, nothing to sync")
         return
 
     records = df.to_dict("records")
     has_chunks = any(r.get("ai_chunks") for r in records)
+    import time
+    start = time.time()
 
     if mode == "article" or (mode == "auto" and not has_chunks):
         _sync_article_level(store, records)
+        sync_total.labels(collection="article", status="success").inc()
     elif mode == "block" or (mode == "auto" and has_chunks):
         _sync_block_level(store, records)
+        sync_total.labels(collection="block", status="success").inc()
     else:
         _sync_article_level(store, records)
+        sync_total.labels(collection="article", status="success").inc()
+
+    elapsed = time.time() - start
+    duration.labels(collection="chunks").observe(elapsed)
+    logger.info(f"⏱️  Sync completed in {elapsed:.1f}s")
 
 
 def _sync_article_level(store: VectorStore, records: list[dict]):
@@ -85,6 +98,65 @@ def _sync_block_level(store: VectorStore, records: list[dict]):
 
     count = store.upsert_chunks(records, all_embeddings)
     logger.info(f"✅ Block-level sync done: {count} chunks written, {store.count()} total vectors")
+
+    # 实体关系三元组同步
+    _sync_triples(store, records)
+
+
+def _sync_triples(store: VectorStore, records: list[dict]):
+    """将文章中的实体关系三元组写入 tech_entities"""
+    from sync_metrics import triple_sync_total, articles_with_zero_triples, triple_sync_articles_scanned
+
+    triples_per_article = []
+    texts = []
+    empty_article_count = 0
+    total_articles = len(records)
+
+    for r in records:
+        article_triples = r.get("ai_triples", [])
+        source = r.get("source", "unknown")
+        triple_sync_articles_scanned.labels(source=source).inc()
+
+        if not article_triples:
+            empty_article_count += 1
+            articles_with_zero_triples.labels(source=source).inc()
+            triples_per_article.append([])
+            continue
+
+        triples_per_article.append(article_triples)
+        for t in article_triples:
+            text = f"{t.get('subject', '')} --{t.get('predicate', '')}--> {t.get('object', '')}"
+            texts.append(text)
+
+    # 告警: 三元组率为 0 或异常偏低
+    if not texts:
+        triple_sync_total.labels(status="skipped").inc()
+        if empty_article_count == total_articles and total_articles > 0:
+            logger.warning(
+                f"⚠️ [ALERT] 所有 {total_articles} 篇文章的三元组均为空 — "
+                "graph_extractor 可能失效或 LLM 返回异常"
+            )
+        else:
+            logger.info(f"  (no triples to sync, {empty_article_count}/{total_articles} articles had triples)")
+        return
+
+    ratio = empty_article_count / total_articles if total_articles else 0
+    if ratio > 0.5:
+        logger.warning(
+            f"⚠️ [ALERT] 三元组缺失率 {ratio:.0%} ({empty_article_count}/{total_articles}) — "
+            "超过 50% 的文章缺少三元组，建议检查 graph_extractor"
+        )
+
+    all_embeddings = _batch_embed(texts)
+    if not all_embeddings:
+        triple_sync_total.labels(status="error").inc()
+        logger.error("❌ [ALERT] 三元组嵌入失败，batch_embed 返回空")
+        return
+
+    written = store.upsert_triples(records, triples_per_article, all_embeddings)
+    triple_sync_total.labels(status="synced").inc()
+    logger.info(f"✅ Entity triples sync done: {written} triples from {total_articles} articles "
+                f"({empty_article_count} articles had zero triples)")
 
 
 def _batch_embed(texts: list[str]) -> list[list[float]] | None:

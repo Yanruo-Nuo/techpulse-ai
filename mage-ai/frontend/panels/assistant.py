@@ -17,7 +17,7 @@ vector_store = VectorStore()
 def agentic_rag(query, df, df_trend=None, max_steps=3):
     """多步推理 RAG: 搜 → 判 → 再搜 → 回答（注意：当前版本保留原 get_rag_response 作为默认路径，
     此函数用于未来切换到 agent 模式时的入口）"""
-    from agent_tools import search_kb, get_trend_summary, get_entity_relations, format_search_results
+    from agent_tools import search_kb, get_trend_summary, search_entity_relations, format_search_results
 
     collected_results = []
     search_query = query
@@ -29,7 +29,7 @@ def agentic_rag(query, df, df_trend=None, max_steps=3):
         search_query = f"{query} 补充信息" if step == 0 else query
 
     context = format_search_results(collected_results[:8])
-    entity_graph = get_entity_relations(query, df)
+    entity_graph = search_entity_relations(vector_store, query, top_k=5)
     trend_text = get_trend_summary(df_trend)
 
     prompt = f"""你是TechPulse技术专家。回答时引用文章标题支撑观点。
@@ -94,21 +94,14 @@ def get_rag_response(query, df, df_trend=None, messages=None):
             ranking = " > ".join(f"{r['tech_category']}({int(r['daily_cnt'])}条)" for _, r in ranked.iterrows())
             trend_overview = f"📈 最新热榜（{latest_date.strftime('%Y-%m-%d')}）：{ranking}"
 
-    # 5. 知识图谱实体关系（从 ai_triples 提取，最多 30 条）
-    entity_graph_lines = []
-    seen_triples = set()
-    for _, r in df.iterrows():
-        for t in r.get('ai_triples', []) or []:
-            key = (t.get('subject',''), t.get('predicate',''), t.get('object',''))
-            if key in seen_triples:
-                continue
-            seen_triples.add(key)
-            entity_graph_lines.append(
-                f"  {t['subject']} --{t['predicate']}--> {t['object']}"
-            )
-        if len(entity_graph_lines) >= 30:
-            break
-    entity_graph = "\n".join(entity_graph_lines) if entity_graph_lines else "（暂无实体关系数据）"
+    # 5. 知识图谱实体关系（从 Qdrant tech_entities 语义检索，O(log n)）
+    entity_graph_text = ""
+    try:
+        from agent_tools import search_entity_relations
+        entity_graph_text = search_entity_relations(vector_store, query, top_k=10)
+    except ImportError:
+        entity_graph_text = "（agent_tools 未加载）"
+    entity_graph = entity_graph_text if "(暂无" not in entity_graph_text else "（暂无实体关系数据）"
 
     # 6. 文章索引（标题 + 分类 + 热度，取热度 TOP 50 避免过长）
     article_lines = []
