@@ -155,7 +155,7 @@
       "description": "DashScope LLM 的 Token 消耗速率。异常飙升可能表示管线循环",
       "gridPos": { "h": 12, "w": 8, "x": 0, "y": 7 },
       "targets": [
-        { "expr": "rate(ai_token_usage_total{job=\"orchestrator\"}[5m]) or vector(0)", "legendFormat": "{{model}} {{operation}}" }
+        { "expr": "rate(ai_token_usage_total{job=\"orchestrator\"}[5m])", "legendFormat": "{{model}} - {{operation}}" }
       ]
     },
     {

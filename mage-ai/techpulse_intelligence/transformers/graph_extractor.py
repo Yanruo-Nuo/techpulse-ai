@@ -4,11 +4,31 @@
 """
 
 import json
+import time
 from typing import Any
 from mage_ai.data_preparation.shared.secrets import get_secret_value
 
 # 延迟导入，避免 Mage AI 上下文加载问题
 _get_cache = None
+
+# 模型配置 — 与 billowing_hill.py 保持一致
+AI_MODEL = "glm-5.1"
+INPUT_COST_PER_TOKEN = 0.0000005
+OUTPUT_COST_PER_TOKEN = 0.000002
+
+# 延迟导入 Prometheus 指标，避免在 Mage AI pipeline 上下文中提前加载
+_metrics = None
+
+def _get_metrics():
+    global _metrics
+    if _metrics is not None:
+        return _metrics
+    try:
+        from metrics import ai_token_usage_total, ai_processing_duration_seconds, ai_token_cost_dollars
+        _metrics = (ai_token_usage_total, ai_processing_duration_seconds, ai_token_cost_dollars)
+    except ImportError:
+        _metrics = (None, None, None)
+    return _metrics
 
 def _get_llm():
     """懒初始化 LLM 调用函数"""
@@ -50,9 +70,11 @@ def extract_entities(chunk_text: str, max_tokens: int = 256) -> list[dict[str, s
         return []
 
     Gen = _get_llm()
+    operation = "entities"
     try:
+        _start = time.time()
         resp = Gen.call(
-            model="glm-5.1",
+            model=AI_MODEL,
             messages=[{
                 "role": "user",
                 "content": ENTITY_PROMPT.format(text=chunk_text[:1000])
@@ -61,8 +83,22 @@ def extract_entities(chunk_text: str, max_tokens: int = 256) -> list[dict[str, s
             temperature=0.1,
             result_format='message',
         )
+        _dur = time.time() - _start
+        metrics = _get_metrics()
+        if metrics[1] is not None:
+            metrics[1].labels(operation=operation).observe(_dur)
         if resp.status_code != 200:
             return []
+        _usage = getattr(resp, 'usage', None)
+        if _usage and metrics[0] is not None:
+            _input = getattr(_usage, 'input_tokens', 0) or 0
+            _output = getattr(_usage, 'output_tokens', 0) or 0
+            metrics[0].labels(model=AI_MODEL, operation=operation).inc(
+                _input + _output
+            )
+            if metrics[2] is not None:
+                _cost = _input * INPUT_COST_PER_TOKEN + _output * OUTPUT_COST_PER_TOKEN
+                metrics[2].labels(model=AI_MODEL).inc(_cost)
         content = resp.output.choices[0]['message']['content']
         # 清理 LLM 可能输出的 markdown 代码块包裹
         content = content.strip()

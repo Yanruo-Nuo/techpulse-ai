@@ -22,7 +22,9 @@ ai_rate_limit_hits_total = Counter(
 ai_rate_limit_hits_total.labels(model='glm-5.1').inc(0)  # init at 0 so time series exists
 
 # Init at 0 so time series exists from prometheus start
-ai_token_usage_total.labels(model='glm-5.1', operation='classify').inc(0)
+# 预注册所有 5 个 AI 操作，确保面板有完整分类
+for op in ('classify', 'round1_extract', 'round2_analyze', 'round3_integrate', 'entities'):
+    ai_token_usage_total.labels(model='glm-5.1', operation=op).inc(0)
 ai_token_cost_dollars.labels(model='glm-5.1').inc(0)
 
 # OSS
