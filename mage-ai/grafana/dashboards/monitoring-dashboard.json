@@ -1,4 +1,5 @@
 {
+  "uid": "techpulse-monitoring",
   "title": "TechPulse AI Monitoring",
   "tags": ["techpulse"],
   "schemaVersion": 36,
@@ -14,9 +15,10 @@
       "title": "Consumer 存活",
       "type": "stat",
       "datasource": "Prometheus",
-      "gridPos": { "h": 3, "w": 4, "x": 0, "y": 1 },
+      "description": "Consumer 进程是否在运行。1=正常，0=已停止",
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 1 },
       "targets": [
-        { "expr": "consumer_alive", "legendFormat": "" }
+        { "expr": "consumer_alive{pipeline=\"techpulse\"}", "legendFormat": "" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -28,17 +30,52 @@
               { "color": "green", "value": 1 }
             ]
           },
-          "color": { "mode": "thresholds" }
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "type": "value", "value": "1", "text": "✅ 运行中" },
+            { "type": "value", "value": "0", "text": "❌ 已停止" }
+          ]
         }
       }
     },
     {
-      "title": "Consumer 上次成功",
+      "title": "管线阶段",
       "type": "stat",
       "datasource": "Prometheus",
-      "gridPos": { "h": 3, "w": 4, "x": 4, "y": 1 },
+      "description": "当前管线所处阶段：空闲 / 抓取中 / AI 处理中 / 写入中",
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 1 },
       "targets": [
-        { "expr": "time() - consumer_last_success_timestamp", "legendFormat": "" }
+        { "expr": "consumer_pipeline_stage or vector(0)", "legendFormat": "" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "none" },
+          "mappings": [
+            { "type": "value", "value": "0", "text": "⏸ 空闲" },
+            { "type": "value", "value": "1", "text": "🌐 抓取中" },
+            { "type": "value", "value": "2", "text": "🤖 AI 处理中" },
+            { "type": "value", "value": "3", "text": "💾 写入中" }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "value": "consumer_pipeline_stage" },
+            "properties": [
+              { "id": "displayName", "value": "当前阶段" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "上次成功写入",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "description": "距离上次成功写入 OSS 已过去的时间。超过30分钟表示管线异常",
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 1 },
+      "targets": [
+        { "expr": "time() - consumer_last_success_timestamp or vector(86400)", "legendFormat": "" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -51,43 +88,29 @@
               { "color": "red", "value": 3600 }
             ]
           },
-          "color": { "mode": "thresholds" }
-        }
-      }
-    },
-    {
-      "title": "管线阶段",
-      "type": "stat",
-      "datasource": "Prometheus",
-      "gridPos": { "h": 3, "w": 4, "x": 8, "y": 1 },
-      "targets": [
-        { "expr": "consumer_pipeline_stage", "legendFormat": "" }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
+          "color": { "mode": "thresholds" },
           "mappings": [
-            { "type": "value", "value": "0", "text": "空闲" },
-            { "type": "value", "value": "1", "text": "抓取中" },
-            { "type": "value", "value": "2", "text": "AI 处理" },
-            { "type": "value", "value": "3", "text": "写入中" }
-          ],
-          "color": { "mode": "none" }
+            { "type": "special", "match": "null", "text": "❌ 从未成功" }
+          ]
         }
       }
     },
     {
-      "title": "待处理消息数",
+      "title": "待处理消息",
       "type": "stat",
       "datasource": "Prometheus",
-      "gridPos": { "h": 3, "w": 4, "x": 12, "y": 1 },
+      "description": "Consumer 缓冲区中待处理的文章数。持续堆积表示处理速度落后于采集速度",
+      "gridPos": { "h": 5, "w": 4, "x": 12, "y": 1 },
       "targets": [
-        { "expr": "consumer_pending_articles", "legendFormat": "" }
+        { "expr": "consumer_pending_articles or vector(0)", "legendFormat": "" }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "none",
-          "color": { "mode": "none" }
+          "color": { "mode": "none" },
+          "mappings": [
+            { "type": "special", "match": "null", "text": "0" }
+          ]
         }
       }
     },
@@ -95,84 +118,61 @@
       "title": "Kafka 消费积压",
       "type": "timeseries",
       "datasource": "Prometheus",
-      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 1 },
+      "description": "Kafka 分区积压量（未消费消息数）。持续增长表示 consumer 处理速度不够",
+      "gridPos": { "h": 10, "w": 8, "x": 16, "y": 1 },
       "targets": [
-        { "expr": "kafka_consume_lag", "legendFormat": "partition {{partition}}" }
+        { "expr": "kafka_consume_lag or vector(0)", "legendFormat": "partition {{partition}}" }
       ]
     },
     {
       "title": "AI Token 消耗趋势",
       "type": "timeseries",
       "datasource": "Prometheus",
-      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 4 },
+      "description": "DashScope LLM 的 Token 消耗速率。异常飙升可能表示管线循环",
+      "gridPos": { "h": 10, "w": 8, "x": 0, "y": 6 },
       "targets": [
-        { "expr": "rate(ai_token_usage_total[5m])", "legendFormat": "{{model}} {{operation}}" }
+        { "expr": "rate(ai_token_usage_total[5m]) or vector(0)", "legendFormat": "{{model}} {{operation}}" }
       ]
     },
     {
       "title": "爬虫采集延迟",
       "type": "timeseries",
       "datasource": "Prometheus",
-      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 4 },
+      "description": "各来源爬虫的采集延迟（秒）。值越大表示该源爬虫越久未成功采集",
+      "gridPos": { "h": 10, "w": 8, "x": 8, "y": 6 },
       "targets": [
-        { "expr": "crawler_produce_lag_seconds", "legendFormat": "{{source}}" }
+        { "expr": "crawler_produce_lag_seconds or vector(0)", "legendFormat": "{{source}}" }
       ]
     },
     {
       "title": "管线指标",
       "type": "row",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 10 }
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 }
     },
     {
-      "title": "OSS 写入（计数）",
+      "title": "OSS 写入状态",
       "type": "stat",
       "datasource": "Prometheus",
-      "gridPos": { "h": 3, "w": 4, "x": 0, "y": 11 },
+      "description": "最近 1 小时 OSS 成功写入的文章数。0 表示无写入",
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 17 },
       "targets": [
-        { "expr": "increase(oss_write_total{status='success'}[1h]) or vector(0)" }
-      ],
-      "fieldConfig": {
-        "defaults": { "unit": "none", "color": { "mode": "none" } }
-      }
-    },
-    {
-      "title": "数据质量 — Others 占比",
-      "type": "timeseries",
-      "datasource": "Prometheus",
-      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 14 },
-      "targets": [
-        { "expr": "dq_others_category_ratio or vector(0)", "legendFormat": "Others占比" }
+        { "expr": "increase(oss_write_total{status='success'}[1h]) or vector(0)", "legendFormat": "" }
       ],
       "fieldConfig": {
         "defaults": {
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "orange", "value": 0.3 },
-              { "color": "red", "value": 0.4 }
-            ]
-          }
+          "unit": "none",
+          "color": { "mode": "none" }
         }
       }
-    },
-    {
-      "title": "数据质量 — AI 字段缺失率",
-      "type": "timeseries",
-      "datasource": "Prometheus",
-      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 14 },
-      "targets": [
-        { "expr": "dq_ai_summary_missing_ratio or vector(0)", "legendFormat": "摘要缺失" },
-        { "expr": "dq_ai_category_missing_ratio or vector(0)", "legendFormat": "分类缺失" }
-      ]
     },
     {
       "title": "MaxCompute 同步",
       "type": "stat",
       "datasource": "Prometheus",
-      "gridPos": { "h": 3, "w": 4, "x": 16, "y": 14 },
+      "description": "OSS→MaxCompute 同步状态。绿色=最近成功，红=失败/未运行",
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 17 },
       "targets": [
-        { "expr": "mc_sync_success or vector(0)" }
+        { "expr": "mc_sync_success or vector(0)", "legendFormat": "" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -184,18 +184,49 @@
               { "color": "green", "value": 1 }
             ]
           },
-          "color": { "mode": "thresholds" }
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "type": "value", "value": "0", "text": "⏸ 未运行" },
+            { "type": "value", "value": "1", "text": "✅ 同步成功" }
+          ]
         }
       }
     },
     {
-      "title": "429 触发计数",
+      "title": "dbt 运行状态",
       "type": "stat",
       "datasource": "Prometheus",
-      "gridPos": { "h": 3, "w": 4, "x": 20, "y": 14 },
+      "description": "dbt 转换作业状态。绿色=成功，红色=失败，灰色=未运行",
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 17 },
       "targets": [
-        { "expr": "increase(ai_rate_limit_hits_total[1h]) or vector(0)" },
-        { "expr": "rate(ai_rate_limit_hits_total[5m]) or vector(0)" }
+        { "expr": "dbt_run_success or vector(0)", "legendFormat": "" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "type": "value", "value": "0", "text": "⏸ 未运行" },
+            { "type": "value", "value": "1", "text": "✅ 执行成功" }
+          ]
+        }
+      }
+    },
+    {
+      "title": "429 限流计数",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "description": "DashScope API 返回 429 的次数。非零表示触发了限流，需要降低请求频率",
+      "gridPos": { "h": 5, "w": 4, "x": 12, "y": 17 },
+      "targets": [
+        { "expr": "increase(ai_rate_limit_hits_total[1h]) or vector(0)", "legendFormat": "" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -207,29 +238,35 @@
               { "color": "red", "value": 1 }
             ]
           },
-          "color": { "mode": "thresholds" }
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "type": "value", "value": "0", "text": "✅ 无限流" },
+            { "type": "special", "match": "null", "text": "0" }
+          ]
         }
       }
     },
     {
-      "title": "dbt 运行状态",
-      "type": "stat",
+      "title": "数据质量",
+      "type": "timeseries",
       "datasource": "Prometheus",
-      "gridPos": { "h": 3, "w": 4, "x": 0, "y": 20 },
+      "description": "AI 字段缺失率（摘要、分类）与 Others 兜底分类占比。超出阈值需排查",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
       "targets": [
-        { "expr": "dbt_run_success or vector(0)" }
+        { "expr": "dq_ai_summary_missing_ratio or vector(0)", "legendFormat": "摘要缺失率" },
+        { "expr": "dq_ai_category_missing_ratio or vector(0)", "legendFormat": "分类缺失率" },
+        { "expr": "dq_others_category_ratio or vector(0)", "legendFormat": "Others 兜底占比" }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "green", "value": 1 }
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0.3 },
+              { "color": "red", "value": 0.4 }
             ]
-          },
-          "color": { "mode": "thresholds" }
+          }
         }
       }
     }
