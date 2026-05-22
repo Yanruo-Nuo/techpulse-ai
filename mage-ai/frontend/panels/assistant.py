@@ -1,4 +1,4 @@
-"""页面 3：AI 助手 — 多轮对话 RAG"""
+"""页面 3：AI 助手 — 多轮对话 RAG + Agentic 推理"""
 
 import streamlit as st
 import pandas as pd
@@ -12,6 +12,44 @@ from vector_store import VectorStore
 
 # 全局单例 — 首次导入时自动连接 Qdrant
 vector_store = VectorStore()
+
+
+def agentic_rag(query, df, df_trend=None, max_steps=3):
+    """多步推理 RAG: 搜 → 判 → 再搜 → 回答（注意：当前版本保留原 get_rag_response 作为默认路径，
+    此函数用于未来切换到 agent 模式时的入口）"""
+    from agent_tools import search_kb, get_trend_summary, get_entity_relations, format_search_results
+
+    collected_results = []
+    search_query = query
+    for step in range(max_steps):
+        results = search_kb(search_query, vector_store, top_k=3)
+        collected_results.extend(results)
+        if len(collected_results) >= 6 or step == max_steps - 1:
+            break
+        search_query = f"{query} 补充信息" if step == 0 else query
+
+    context = format_search_results(collected_results[:8])
+    entity_graph = get_entity_relations(query, df)
+    trend_text = get_trend_summary(df_trend)
+
+    prompt = f"""你是TechPulse技术专家。回答时引用文章标题支撑观点。
+
+📊 知识库概况（共{len(df)}篇）
+🔗 相关知识图谱：\n{entity_graph}
+📈 趋势：{trend_text}
+📌 相关资讯（{min(len(collected_results), 8)} 段）：\n{context}
+
+用户问题：{query}
+
+要求：1.先概括核心要点 2.引用文章标题支撑 3.指出实体关系 4.简短总结。用中文回答。"""
+
+    import dashscope
+    gen_resp = dashscope.Generation.call(
+        model="glm-5.1",
+        messages=[{"role": "user", "content": prompt}],
+        result_format='message',
+    )
+    return gen_resp.output.choices[0]['message']['content'] if gen_resp.status_code == 200 else f"模型错误: {gen_resp.message}"
 
 
 def get_rag_response(query, df, df_trend=None, messages=None):
@@ -56,7 +94,23 @@ def get_rag_response(query, df, df_trend=None, messages=None):
             ranking = " > ".join(f"{r['tech_category']}({int(r['daily_cnt'])}条)" for _, r in ranked.iterrows())
             trend_overview = f"📈 最新热榜（{latest_date.strftime('%Y-%m-%d')}）：{ranking}"
 
-    # 5. 文章索引（标题 + 分类 + 热度，取热度 TOP 50 避免过长）
+    # 5. 知识图谱实体关系（从 ai_triples 提取，最多 30 条）
+    entity_graph_lines = []
+    seen_triples = set()
+    for _, r in df.iterrows():
+        for t in r.get('ai_triples', []) or []:
+            key = (t.get('subject',''), t.get('predicate',''), t.get('object',''))
+            if key in seen_triples:
+                continue
+            seen_triples.add(key)
+            entity_graph_lines.append(
+                f"  {t['subject']} --{t['predicate']}--> {t['object']}"
+            )
+        if len(entity_graph_lines) >= 30:
+            break
+    entity_graph = "\n".join(entity_graph_lines) if entity_graph_lines else "（暂无实体关系数据）"
+
+    # 6. 文章索引（标题 + 分类 + 热度，取热度 TOP 50 避免过长）
     article_lines = []
     idx_df = df.copy()
     if 'score' in idx_df.columns:
@@ -81,6 +135,9 @@ def get_rag_response(query, df, df_trend=None, messages=None):
 
 📊 知识库概况（共{len(df)}篇）：
 分类分布：{dist_text}
+
+🔗 知识图谱（实体间关系）：
+{entity_graph}
 
 {trend_overview}
 

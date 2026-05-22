@@ -375,4 +375,11 @@ def transform_ai_v2(article: dict) -> dict:
         for c in chunks
     ]
 
+    # Step 6: 知识图谱实体关系提取
+    try:
+        from transformers.graph_extractor import extract_entities_batch
+        article["ai_triples"] = extract_entities_batch(article["ai_chunks"])
+    except ImportError:
+        article["ai_triples"] = []
+
     return article
