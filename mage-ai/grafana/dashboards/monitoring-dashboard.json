@@ -367,9 +367,9 @@
       "description": "AI 字段缺失率（摘要、分类）与 Others 兜底分类占比。超出阈值需排查",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 },
       "targets": [
-        { "expr": "dq_ai_summary_missing_ratio{job=\"tech-frontend\"} or vector(0)", "legendFormat": "摘要缺失率" },
-        { "expr": "dq_ai_category_missing_ratio{job=\"tech-frontend\"} or vector(0)", "legendFormat": "分类缺失率" },
-        { "expr": "dq_others_category_ratio{job=\"tech-frontend\"} or vector(0)", "legendFormat": "Others 占比" }
+        { "expr": "dq_ai_summary_missing_ratio{job=\"tech-frontend\"}", "legendFormat": "摘要缺失率" },
+        { "expr": "dq_ai_category_missing_ratio{job=\"tech-frontend\"}", "legendFormat": "分类缺失率" },
+        { "expr": "dq_others_category_ratio{job=\"tech-frontend\"}", "legendFormat": "Others 占比" }
       ],
       "fieldConfig": {
         "defaults": {
