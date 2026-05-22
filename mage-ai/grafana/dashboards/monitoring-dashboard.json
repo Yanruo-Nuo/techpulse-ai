@@ -33,8 +33,7 @@
           },
           "color": { "mode": "thresholds" },
           "mappings": [
-            { "type": "value", "value": "1", "text": "✅ 运行中" },
-            { "type": "value", "value": "0", "text": "❌ 已停止" }
+            { "type": "value", "options": { "0": { "text": "❌ 已停止" }, "1": { "text": "✅ 运行中" } } }
           ]
         }
       },
@@ -62,10 +61,7 @@
           "displayName": "当前阶段",
           "color": { "mode": "none" },
           "mappings": [
-            { "type": "value", "value": "0", "text": "⏸ 空闲" },
-            { "type": "value", "value": "1", "text": "🌐 抓取中" },
-            { "type": "value", "value": "2", "text": "🤖 AI 处理中" },
-            { "type": "value", "value": "3", "text": "💾 写入中" }
+            { "type": "value", "options": { "0": { "text": "⏸ 空闲" }, "1": { "text": "🌐 抓取中" }, "2": { "text": "🤖 AI 处理中" }, "3": { "text": "💾 写入中" } } }
           ]
         }
       },
@@ -224,8 +220,7 @@
           },
           "color": { "mode": "thresholds" },
           "mappings": [
-            { "type": "value", "value": "0", "text": "⏸ 未运行" },
-            { "type": "value", "value": "1", "text": "✅ 同步成功" }
+            { "type": "value", "options": { "0": { "text": "⏸ 未运行" }, "1": { "text": "✅ 同步成功" } } }
           ]
         }
       },
@@ -260,8 +255,7 @@
           },
           "color": { "mode": "thresholds" },
           "mappings": [
-            { "type": "value", "value": "0", "text": "⏸ 未运行" },
-            { "type": "value", "value": "1", "text": "✅ 执行成功" }
+            { "type": "value", "options": { "0": { "text": "⏸ 未运行" }, "1": { "text": "✅ 执行成功" } } }
           ]
         }
       },
@@ -296,8 +290,7 @@
           },
           "color": { "mode": "thresholds" },
           "mappings": [
-            { "type": "value", "value": "0", "text": "✅ 无限流" },
-            { "type": "special", "match": "null", "text": "0" }
+            { "type": "value", "options": { "0": { "text": "✅ 无限流" } } }
           ]
         }
       },
