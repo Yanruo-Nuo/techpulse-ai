@@ -39,7 +39,7 @@
       "title": "MaxCompute 扫描量",
       "type": "timeseries",
       "datasource": "Prometheus",
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 6 },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 6 },
       "targets": [
         {
           "expr": "rate(mc_query_scanned_bytes[5m]) or vector(0)",
@@ -59,10 +59,22 @@
       ]
     },
     {
+      "title": "Kafka 消费积压",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 6 },
+      "targets": [
+        {
+          "expr": "kafka_consume_lag",
+          "legendFormat": "partition {{partition}}"
+        }
+      ]
+    },
+    {
       "title": "AI 字段缺失率",
       "type": "timeseries",
       "datasource": "Prometheus",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 12 },
       "targets": [
         {
           "expr": "dq_ai_summary_missing_ratio",
@@ -78,7 +90,7 @@
       "title": "Others 占比",
       "type": "timeseries",
       "datasource": "Prometheus",
-      "gridPos": { "h": 8, "w": 8, "x": 12, "y": 17 },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 12 },
       "targets": [
         {
           "expr": "dq_others_category_ratio",
@@ -102,7 +114,7 @@
       "title": "端到端延迟",
       "type": "timeseries",
       "datasource": "Prometheus",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 25 },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 18 },
       "targets": [
         {
           "expr": "pipeline_e2e_latency_seconds",
@@ -111,23 +123,10 @@
       ]
     },
     {
-      "title": "Kafka 消费积压",
-      "type": "timeseries",
-      "datasource": "Prometheus",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 25 },
-      "targets": [
-        {
-          "expr": "kafka_consume_lag",
-          "legendFormat": "partition {{partition}}"
-        }
-      ]
-    },
-
-    {
       "title": "爬虫采集延迟",
       "type": "timeseries",
       "datasource": "Prometheus",
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 33 },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 18 },
       "targets": [
         {
           "expr": "crawler_produce_lag_seconds",
