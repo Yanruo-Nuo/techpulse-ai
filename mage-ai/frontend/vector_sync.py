@@ -72,11 +72,12 @@ def _sync_block_level(store: VectorStore, records: list[dict]):
         if chunks:
             for c in chunks:
                 prefix = f"标题：{r.get('title', '')}（片段{c.get('block_index', 0)}）\n"
-                all_texts.append(prefix + (c.get("text", "")[:1500]))
+                # chunker 生成的分块 ≤800 字符，DSS 上限 3000 字符，不截断
+                all_texts.append(prefix + c.get("text", ""))
         else:
-            # 无分块的文章，以文章为单位
+            # 无分块的文章，以文章为单位；摘要最长截断到 2500 字符（DSS 上限 ~3000）
             prefix = f"标题：{r.get('title', '')}（全文）\n"
-            all_texts.append(prefix + (r.get("ai_summary", "")[:1500]))
+            all_texts.append(prefix + (r.get("ai_summary", "")[:2500]))
 
     all_embeddings = _batch_embed(all_texts)
     if not all_embeddings:

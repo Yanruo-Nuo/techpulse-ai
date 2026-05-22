@@ -117,7 +117,7 @@ class VectorStore:
                             "url": article.get("url", ""),
                             "block_index": -1,
                             "block_type": "article",
-                            "block_preview": (article.get("ai_summary") or article.get("title", ""))[:200],
+                            "block_preview": (article.get("ai_summary") or article.get("title", ""))[:500],
                             "type": "article",
                         },
                     )
@@ -137,7 +137,7 @@ class VectorStore:
                             "url": article.get("url", ""),
                             "block_index": chunk.get("block_index", -1),
                             "block_type": chunk.get("block_type", "paragraph"),
-                            "block_preview": chunk.get("text", "")[:200],
+                            "block_preview": chunk.get("text", "")[:500],
                             "type": "block",
                         },
                     )

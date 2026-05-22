@@ -56,6 +56,18 @@ def get_rag_response(query, df, df_trend=None, messages=None):
             ranking = " > ".join(f"{r['tech_category']}({int(r['daily_cnt'])}条)" for _, r in ranked.iterrows())
             trend_overview = f"📈 最新热榜（{latest_date.strftime('%Y-%m-%d')}）：{ranking}"
 
+    # 5. 文章索引（标题 + 分类 + 热度，取热度 TOP 50 避免过长）
+    article_lines = []
+    idx_df = df.copy()
+    if 'score' in idx_df.columns:
+        idx_df['score'] = pd.to_numeric(idx_df['score'], errors='coerce').fillna(0)
+        idx_df = idx_df.nlargest(50, 'score')
+    for i, (_, r) in enumerate(idx_df.iterrows()):
+        cat = r.get('tech_category', '')
+        title = str(r.get('title', ''))[:60]
+        article_lines.append(f"{i+1}. [{title}] | {cat}")
+    article_index = "\n".join(article_lines) if article_lines else "（暂无）"
+
     # 10. 历史对话
     history_text = ""
     if messages and len(messages) > 1:
