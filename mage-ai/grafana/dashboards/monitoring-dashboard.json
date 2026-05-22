@@ -85,7 +85,7 @@
       "description": "距离上次成功写入 OSS 已过去的时间。超过30分钟表示管线异常",
       "gridPos": { "h": 6, "w": 4, "x": 8, "y": 1 },
       "targets": [
-        { "expr": "time() - consumer_last_success_timestamp{job=\"consumer-health\"} or vector(86400)", "legendFormat": "__auto" }
+        { "expr": "(time() - consumer_last_success_timestamp{job=\"consumer-health\"}) and (consumer_last_success_timestamp{job=\"consumer-health\"} > 0)", "legendFormat": "__auto" }
       ],
       "fieldConfig": {
         "defaults": {
