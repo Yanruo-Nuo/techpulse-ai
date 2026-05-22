@@ -54,7 +54,7 @@
       "description": "当前管线所处阶段：空闲 / 抓取中 / AI 处理中 / 写入中",
       "gridPos": { "h": 6, "w": 4, "x": 4, "y": 1 },
       "targets": [
-        { "expr": "consumer_pipeline_stage{job=\"consumer-health\"} or vector(0)", "legendFormat": "__auto" }
+        { "expr": "consumer_pipeline_stage{job=\"consumer-health\"}", "legendFormat": "__auto" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -121,7 +121,7 @@
       "description": "Consumer 缓冲区中待处理的文章数。持续堆积表示处理速度落后于采集速度",
       "gridPos": { "h": 6, "w": 4, "x": 12, "y": 1 },
       "targets": [
-        { "expr": "consumer_pending_articles{job=\"consumer-health\"} or vector(0)", "legendFormat": "__auto" }
+        { "expr": "consumer_pending_articles{job=\"consumer-health\"}", "legendFormat": "__auto" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -149,7 +149,7 @@
       "description": "Kafka 分区积压量（未消费消息数）。持续增长表示 consumer 处理速度不够",
       "gridPos": { "h": 12, "w": 8, "x": 16, "y": 1 },
       "targets": [
-        { "expr": "kafka_consume_lag{job=\"consumer-health\"} or vector(0)", "legendFormat": "partition 0" }
+        { "expr": "kafka_consume_lag{job=\"consumer-health\"}", "legendFormat": "partition 0" }
       ]
     },
     {
@@ -169,7 +169,7 @@
       "description": "各来源爬虫的采集延迟（秒）。值越大表示该源爬虫越久未成功采集",
       "gridPos": { "h": 12, "w": 8, "x": 8, "y": 7 },
       "targets": [
-        { "expr": "crawler_produce_lag_seconds{job=\"news-crawler\"} or vector(0)", "legendFormat": "{{source}}" }
+        { "expr": "crawler_produce_lag_seconds{job=\"news-crawler\"}", "legendFormat": "{{source}}" }
       ]
     },
     {
@@ -184,7 +184,7 @@
       "description": "最近 1 小时 OSS 成功写入的文章数。0 表示无写入",
       "gridPos": { "h": 6, "w": 4, "x": 0, "y": 20 },
       "targets": [
-        { "expr": "increase(oss_write_total{job=\"orchestrator\",status='success'}[1h]) or vector(0)", "legendFormat": "__auto" }
+        { "expr": "increase(oss_write_total{job=\"orchestrator\",status='success'}[1h])", "legendFormat": "__auto" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -209,7 +209,7 @@
       "description": "OSS→MaxCompute 同步状态。绿色=最近成功，红=失败/未运行",
       "gridPos": { "h": 6, "w": 4, "x": 4, "y": 20 },
       "targets": [
-        { "expr": "mc_sync_success{job=\"orchestrator-sync\"} or vector(0)", "legendFormat": "__auto" }
+        { "expr": "mc_sync_success{job=\"orchestrator-sync\"}", "legendFormat": "__auto" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -245,7 +245,7 @@
       "description": "dbt 转换作业状态。绿色=成功，红色=失败，灰色=未运行",
       "gridPos": { "h": 6, "w": 4, "x": 8, "y": 20 },
       "targets": [
-        { "expr": "dbt_run_success{job=\"orchestrator-sync\"} or vector(0)", "legendFormat": "__auto" }
+        { "expr": "dbt_run_success{job=\"orchestrator-sync\"}", "legendFormat": "__auto" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -281,7 +281,7 @@
       "description": "DashScope API 返回 429 的次数。非零表示触发了限流，需要降低请求频率",
       "gridPos": { "h": 6, "w": 4, "x": 12, "y": 20 },
       "targets": [
-        { "expr": "increase(ai_rate_limit_hits_total{job=\"orchestrator\"}[1h]) or vector(0)", "legendFormat": "__auto" }
+        { "expr": "increase(ai_rate_limit_hits_total{job=\"orchestrator\"}[1h])", "legendFormat": "__auto" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -317,7 +317,7 @@
       "description": "MaxCompute 数据扫描量",
       "gridPos": { "h": 6, "w": 4, "x": 16, "y": 20 },
       "targets": [
-        { "expr": "increase(mc_query_scanned_bytes_total[1h]) or vector(0)", "legendFormat": "__auto" }
+        { "expr": "increase(mc_query_scanned_bytes_total[1h])", "legendFormat": "__auto" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -342,7 +342,7 @@
       "description": "dbt 作业最近一次运行耗时",
       "gridPos": { "h": 6, "w": 4, "x": 20, "y": 20 },
       "targets": [
-        { "expr": "dbt_run_duration_seconds or vector(0)", "legendFormat": "__auto" }
+        { "expr": "dbt_run_duration_seconds", "legendFormat": "__auto" }
       ],
       "fieldConfig": {
         "defaults": {
