@@ -6,7 +6,7 @@ echo "Starting Kafka consumer in background (auto-restart on crash)..."
 cd /home/src/techpulse_intelligence
 (
   while true; do
-    python kafka_consumer.py
+    PYTHONPATH=/home/src python kafka_consumer.py
     EXIT_CODE=$?
     TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
     echo "[$TIMESTAMP] kafka_consumer.py exited with code $EXIT_CODE, restarting in 5s..."

@@ -37,27 +37,27 @@ def run():
     start_health_server(8005)
     logger.info("Health metrics HTTP server started on port 8005")
 
-    consumer = KafkaConsumer(
-        "raw_tech_feeds",
-        bootstrap_servers="kafka:9092",
-        group_id="techpulse-mage-consumer",
-        auto_offset_reset="latest",
-        enable_auto_commit=False,
-        max_poll_records=500,
-        session_timeout_ms=180000,
-        max_poll_interval_ms=360000,
-        heartbeat_interval_ms=30000,
-        consumer_timeout_ms=60000,
-    )
-    logger.info("Connected to kafka:9092, subscribed to raw_tech_feeds")
-
-    sink = UnifiedSink()
-    sink.init_client()
-    logger.info("OSS sink initialized")
-
     retry_attempt = 0
     while True:
         try:
+            consumer = KafkaConsumer(
+                "raw_tech_feeds",
+                bootstrap_servers="kafka:9092",
+                group_id="techpulse-mage-consumer",
+                auto_offset_reset="latest",
+                enable_auto_commit=False,
+                max_poll_records=500,
+                session_timeout_ms=180000,
+                max_poll_interval_ms=360000,
+                heartbeat_interval_ms=30000,
+                consumer_timeout_ms=60000,
+            )
+            logger.info("Connected to kafka:9092, subscribed to raw_tech_feeds")
+
+            sink = UnifiedSink()
+            sink.init_client()
+            logger.info("OSS sink initialized")
+
             _run_loop(consumer, sink)
             retry_attempt = 0
         except Exception as e:
@@ -67,6 +67,7 @@ def run():
                 f"Consumer error: {e}, reconnecting in {backoff}s (attempt {retry_attempt})",
                 exc_info=True,
             )
+            # 健康指标保持 alive（后台线程还在运行）
             time.sleep(backoff)
 
 
