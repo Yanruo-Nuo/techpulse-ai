@@ -38,7 +38,7 @@ def sync_all(mode: str = "auto"):
     store = VectorStore()
     df = load_news_data()
     if df.empty:
-        sync_total.labels(collection="dwd_user_sessions", status="empty").inc()
+        sync_total.labels(collection="tech_news", status="empty").inc()
         logger.warning("No news data found, nothing to sync")
         return
 
@@ -49,16 +49,16 @@ def sync_all(mode: str = "auto"):
 
     if mode == "article" or (mode == "auto" and not has_chunks):
         _sync_article_level(store, records)
-        sync_total.labels(collection="article", status="success").inc()
+        sync_total.labels(collection="tech_news", status="success").inc()
     elif mode == "block" or (mode == "auto" and has_chunks):
         _sync_block_level(store, records)
-        sync_total.labels(collection="block", status="success").inc()
+        sync_total.labels(collection="tech_news", status="success").inc()
     else:
         _sync_article_level(store, records)
-        sync_total.labels(collection="article", status="success").inc()
+        sync_total.labels(collection="tech_news", status="success").inc()
 
     elapsed = time.time() - start
-    duration.labels(collection="chunks").observe(elapsed)
+    duration.labels(collection="tech_news").observe(elapsed)
     logger.info(f"⏱️  Sync completed in {elapsed:.1f}s")
 
 
