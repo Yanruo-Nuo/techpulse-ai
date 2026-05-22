@@ -18,7 +18,7 @@
       "description": "Consumer 进程是否在运行。1=正常，0=已停止",
       "gridPos": { "h": 5, "w": 4, "x": 0, "y": 1 },
       "targets": [
-        { "expr": "consumer_alive{pipeline=\"techpulse\"}", "legendFormat": "" }
+        { "expr": "consumer_alive{job=\"consumer-health\"}", "legendFormat": "" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -45,7 +45,7 @@
       "description": "当前管线所处阶段：空闲 / 抓取中 / AI 处理中 / 写入中",
       "gridPos": { "h": 5, "w": 4, "x": 4, "y": 1 },
       "targets": [
-        { "expr": "consumer_pipeline_stage or vector(0)", "legendFormat": "" }
+        { "expr": "consumer_pipeline_stage{job=\"consumer-health\"} or vector(0)", "legendFormat": "" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -75,7 +75,7 @@
       "description": "距离上次成功写入 OSS 已过去的时间。超过30分钟表示管线异常",
       "gridPos": { "h": 5, "w": 4, "x": 8, "y": 1 },
       "targets": [
-        { "expr": "time() - consumer_last_success_timestamp or vector(86400)", "legendFormat": "" }
+        { "expr": "time() - consumer_last_success_timestamp{job=\"consumer-health\"} or vector(86400)", "legendFormat": "" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -102,7 +102,7 @@
       "description": "Consumer 缓冲区中待处理的文章数。持续堆积表示处理速度落后于采集速度",
       "gridPos": { "h": 5, "w": 4, "x": 12, "y": 1 },
       "targets": [
-        { "expr": "consumer_pending_articles or vector(0)", "legendFormat": "" }
+        { "expr": "consumer_pending_articles{job=\"consumer-health\"} or vector(0)", "legendFormat": "" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -121,7 +121,7 @@
       "description": "Kafka 分区积压量（未消费消息数）。持续增长表示 consumer 处理速度不够",
       "gridPos": { "h": 10, "w": 8, "x": 16, "y": 1 },
       "targets": [
-        { "expr": "kafka_consume_lag or vector(0)", "legendFormat": "partition {{partition}}" }
+        { "expr": "kafka_consume_lag{job=\"consumer-health\"} or vector(0)", "legendFormat": "partition 0" }
       ]
     },
     {
@@ -131,7 +131,7 @@
       "description": "DashScope LLM 的 Token 消耗速率。异常飙升可能表示管线循环",
       "gridPos": { "h": 10, "w": 8, "x": 0, "y": 6 },
       "targets": [
-        { "expr": "rate(ai_token_usage_total[5m]) or vector(0)", "legendFormat": "{{model}} {{operation}}" }
+        { "expr": "rate(ai_token_usage_total{job=\"orchestrator\"}[5m]) or vector(0)", "legendFormat": "{{model}} {{operation}}" }
       ]
     },
     {
@@ -141,7 +141,7 @@
       "description": "各来源爬虫的采集延迟（秒）。值越大表示该源爬虫越久未成功采集",
       "gridPos": { "h": 10, "w": 8, "x": 8, "y": 6 },
       "targets": [
-        { "expr": "crawler_produce_lag_seconds or vector(0)", "legendFormat": "{{source}}" }
+        { "expr": "crawler_produce_lag_seconds{job=\"news-crawler\"} or vector(0)", "legendFormat": "{{source}}" }
       ]
     },
     {
@@ -156,7 +156,7 @@
       "description": "最近 1 小时 OSS 成功写入的文章数。0 表示无写入",
       "gridPos": { "h": 5, "w": 4, "x": 0, "y": 17 },
       "targets": [
-        { "expr": "increase(oss_write_total{status='success'}[1h]) or vector(0)", "legendFormat": "" }
+        { "expr": "increase(oss_write_total{job=\"orchestrator\",status='success'}[1h]) or vector(0)", "legendFormat": "" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -172,7 +172,7 @@
       "description": "OSS→MaxCompute 同步状态。绿色=最近成功，红=失败/未运行",
       "gridPos": { "h": 5, "w": 4, "x": 4, "y": 17 },
       "targets": [
-        { "expr": "mc_sync_success or vector(0)", "legendFormat": "" }
+        { "expr": "mc_sync_success{job=\"orchestrator-sync\"} or vector(0)", "legendFormat": "" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -199,7 +199,7 @@
       "description": "dbt 转换作业状态。绿色=成功，红色=失败，灰色=未运行",
       "gridPos": { "h": 5, "w": 4, "x": 8, "y": 17 },
       "targets": [
-        { "expr": "dbt_run_success or vector(0)", "legendFormat": "" }
+        { "expr": "dbt_run_success{job=\"orchestrator-sync\"} or vector(0)", "legendFormat": "" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -226,7 +226,7 @@
       "description": "DashScope API 返回 429 的次数。非零表示触发了限流，需要降低请求频率",
       "gridPos": { "h": 5, "w": 4, "x": 12, "y": 17 },
       "targets": [
-        { "expr": "increase(ai_rate_limit_hits_total[1h]) or vector(0)", "legendFormat": "" }
+        { "expr": "increase(ai_rate_limit_hits_total{job=\"orchestrator\"}[1h]) or vector(0)", "legendFormat": "" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -253,9 +253,9 @@
       "description": "AI 字段缺失率（摘要、分类）与 Others 兜底分类占比。超出阈值需排查",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
       "targets": [
-        { "expr": "dq_ai_summary_missing_ratio or vector(0)", "legendFormat": "摘要缺失率" },
-        { "expr": "dq_ai_category_missing_ratio or vector(0)", "legendFormat": "分类缺失率" },
-        { "expr": "dq_others_category_ratio or vector(0)", "legendFormat": "Others 兜底占比" }
+        { "expr": "dq_ai_summary_missing_ratio{job=\"tech-frontend\"} or vector(0)", "legendFormat": "摘要缺失率" },
+        { "expr": "dq_ai_category_missing_ratio{job=\"tech-frontend\"} or vector(0)", "legendFormat": "分类缺失率" },
+        { "expr": "dq_others_category_ratio{job=\"tech-frontend\"} or vector(0)", "legendFormat": "Others 兜底占比" }
       ],
       "fieldConfig": {
         "defaults": {
