@@ -84,7 +84,7 @@
       "description": "当前阶段已运行时间（自动更新）",
       "gridPos": { "h": 5, "w": 4, "x": 4, "y": 7 },
       "targets": [
-        { "expr": "(time() - consumer_stage_changed_timestamp{job=\"consumer-health\"}) and (consumer_stage_changed_timestamp{job=\"consumer-health\"} > 0) or vector(0)", "legendFormat": "__auto" }
+        { "expr": "max((time() - consumer_stage_changed_timestamp{job=\"consumer-health\"}) and (consumer_stage_changed_timestamp{job=\"consumer-health\"} > 0) or vector(0))", "legendFormat": "__auto" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -367,9 +367,9 @@
       "description": "AI 字段缺失率（摘要、分类）与 Others 兜底分类占比。超出阈值需排查",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
       "targets": [
-        { "expr": "dq_ai_summary_missing_ratio{job=\"tech-frontend\"}", "legendFormat": "摘要缺失率" },
-        { "expr": "dq_ai_category_missing_ratio{job=\"tech-frontend\"}", "legendFormat": "分类缺失率" },
-        { "expr": "dq_others_category_ratio{job=\"tech-frontend\"}", "legendFormat": "Others 占比" }
+        { "expr": "dq_ai_summary_missing_ratio{job=\"orchestrator\"}", "legendFormat": "摘要缺失率" },
+        { "expr": "dq_ai_category_missing_ratio{job=\"orchestrator\"}", "legendFormat": "分类缺失率" },
+        { "expr": "dq_others_category_ratio{job=\"orchestrator\"}", "legendFormat": "Others 占比" }
       ],
       "fieldConfig": {
         "defaults": {
