@@ -4,7 +4,10 @@
   "tags": ["techpulse"],
   "schemaVersion": 36,
   "time": { "from": "now-24h", "to": "now" },
-  "timepicker": {},
+  "refresh": "1s",
+  "timepicker": {
+    "refresh_intervals": ["1s", "5s", "10s", "30s", "1m", "5m", "15m"]
+  },
   "panels": [
     {
       "title": "服务健康",
@@ -51,10 +54,9 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "当前管线所处阶段：空闲 / 抓取中 / AI 处理中 / 写入中",
-      "gridPos": { "h": 6, "w": 4, "x": 4, "y": 1 },
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 1 },
       "targets": [
-        { "expr": "consumer_pipeline_stage{job=\"consumer-health\"}", "legendFormat": "当前阶段" },
-        { "expr": "time() - consumer_stage_changed_timestamp{job=\"consumer-health\"}", "legendFormat": "持续时长" }
+        { "expr": "consumer_pipeline_stage{job=\"consumer-health\"}", "legendFormat": "__auto" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -64,15 +66,35 @@
           "mappings": [
             { "type": "value", "options": { "0": { "text": "⏸ 空闲" }, "1": { "text": "🌐 抓取中" }, "2": { "text": "🤖 AI 处理中" }, "3": { "text": "💾 写入中" } } }
           ]
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "value": "持续时长" },
-            "properties": [
-              { "id": "unit", "value": "s" }
-            ]
-          }
-        ]
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      }
+    },
+    {
+      "title": "阶段持续",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "description": "当前阶段已运行时间（自动更新）",
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 6 },
+      "targets": [
+        { "expr": "time() - consumer_stage_changed_timestamp{job=\"consumer-health\"} or vector(0)", "legendFormat": "__auto" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "displayName": "持续时长",
+          "color": { "mode": "none" },
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "⏹ 已停止" } } }
+          ]
+        }
       },
       "options": {
         "colorMode": "value",
@@ -162,7 +184,7 @@
       "type": "timeseries",
       "datasource": "Prometheus",
       "description": "DashScope LLM 的 Token 消耗速率。异常飙升可能表示管线循环",
-      "gridPos": { "h": 12, "w": 8, "x": 0, "y": 7 },
+      "gridPos": { "h": 12, "w": 8, "x": 0, "y": 13 },
       "targets": [
         { "expr": "rate(ai_token_usage_total{job=\"orchestrator\"}[5m])", "legendFormat": "{{model}} - {{operation}}" }
       ]
@@ -172,7 +194,7 @@
       "type": "timeseries",
       "datasource": "Prometheus",
       "description": "各来源爬虫的采集延迟（秒）。值越大表示该源爬虫越久未成功采集",
-      "gridPos": { "h": 12, "w": 8, "x": 8, "y": 7 },
+      "gridPos": { "h": 12, "w": 8, "x": 8, "y": 13 },
       "targets": [
         { "expr": "crawler_produce_lag_seconds{job=\"news-crawler\"}", "legendFormat": "{{source}}" }
       ]
@@ -180,7 +202,7 @@
     {
       "title": "管线指标",
       "type": "row",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 19 }
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 }
     },
 
     {
@@ -188,7 +210,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "OSS→MaxCompute 同步状态。绿色=最近成功，红=失败/未运行",
-      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 20 },
+      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 26 },
       "targets": [
         { "expr": "mc_sync_success{job=\"orchestrator-sync\"}", "legendFormat": "__auto" }
       ],
@@ -223,7 +245,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "dbt 转换作业状态。绿色=成功，红色=失败，灰色=未运行",
-      "gridPos": { "h": 6, "w": 4, "x": 4, "y": 20 },
+      "gridPos": { "h": 6, "w": 4, "x": 4, "y": 26 },
       "targets": [
         { "expr": "dbt_run_success{job=\"orchestrator-sync\"}", "legendFormat": "__auto" }
       ],
@@ -258,7 +280,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "DashScope API 返回 429 的次数。非零表示触发了限流，需要降低请求频率",
-      "gridPos": { "h": 6, "w": 4, "x": 8, "y": 20 },
+      "gridPos": { "h": 6, "w": 4, "x": 8, "y": 26 },
       "targets": [
         { "expr": "increase(ai_rate_limit_hits_total{job=\"orchestrator\"}[1h])", "legendFormat": "__auto" }
       ],
@@ -293,7 +315,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "MaxCompute 数据扫描量",
-      "gridPos": { "h": 6, "w": 4, "x": 12, "y": 20 },
+      "gridPos": { "h": 6, "w": 4, "x": 12, "y": 26 },
       "targets": [
         { "expr": "increase(mc_query_scanned_bytes_total{job=\"tech-frontend\"}[1h])", "legendFormat": "__auto" }
       ],
@@ -318,7 +340,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "dbt 作业最近一次运行耗时",
-      "gridPos": { "h": 6, "w": 4, "x": 16, "y": 20 },
+      "gridPos": { "h": 6, "w": 4, "x": 16, "y": 26 },
       "targets": [
         { "expr": "dbt_run_duration_seconds{job=\"orchestrator-sync\"}", "legendFormat": "__auto" }
       ],
@@ -343,7 +365,7 @@
       "type": "timeseries",
       "datasource": "Prometheus",
       "description": "AI 字段缺失率（摘要、分类）与 Others 兜底分类占比。超出阈值需排查",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
       "targets": [
         { "expr": "dq_ai_summary_missing_ratio{job=\"tech-frontend\"}", "legendFormat": "摘要缺失率" },
         { "expr": "dq_ai_category_missing_ratio{job=\"tech-frontend\"}", "legendFormat": "分类缺失率" },
