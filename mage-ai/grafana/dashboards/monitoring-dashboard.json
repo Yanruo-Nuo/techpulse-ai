@@ -179,7 +179,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "OSS→MaxCompute 同步状态。绿色=最近成功，红=失败/未运行",
-      "gridPos": { "h": 6, "w": 4, "x": 4, "y": 20 },
+      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 20 },
       "targets": [
         { "expr": "mc_sync_success{job=\"orchestrator-sync\"}", "legendFormat": "__auto" }
       ],
@@ -214,7 +214,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "dbt 转换作业状态。绿色=成功，红色=失败，灰色=未运行",
-      "gridPos": { "h": 6, "w": 4, "x": 8, "y": 20 },
+      "gridPos": { "h": 6, "w": 4, "x": 4, "y": 20 },
       "targets": [
         { "expr": "dbt_run_success{job=\"orchestrator-sync\"}", "legendFormat": "__auto" }
       ],
@@ -249,7 +249,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "DashScope API 返回 429 的次数。非零表示触发了限流，需要降低请求频率",
-      "gridPos": { "h": 6, "w": 4, "x": 12, "y": 20 },
+      "gridPos": { "h": 6, "w": 4, "x": 8, "y": 20 },
       "targets": [
         { "expr": "increase(ai_rate_limit_hits_total{job=\"orchestrator\"}[1h])", "legendFormat": "__auto" }
       ],
@@ -284,7 +284,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "MaxCompute 数据扫描量",
-      "gridPos": { "h": 6, "w": 4, "x": 16, "y": 20 },
+      "gridPos": { "h": 6, "w": 4, "x": 12, "y": 20 },
       "targets": [
         { "expr": "increase(mc_query_scanned_bytes_total{job=\"tech-frontend\"}[1h])", "legendFormat": "__auto" }
       ],
@@ -309,7 +309,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "dbt 作业最近一次运行耗时",
-      "gridPos": { "h": 6, "w": 4, "x": 20, "y": 20 },
+      "gridPos": { "h": 6, "w": 4, "x": 16, "y": 20 },
       "targets": [
         { "expr": "dbt_run_duration_seconds{job=\"orchestrator-sync\"}", "legendFormat": "__auto" }
       ],
