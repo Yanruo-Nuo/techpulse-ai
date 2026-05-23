@@ -112,6 +112,7 @@ def run():
         print(f"dbt path not found: {dbt_path}")
 
     print("Pipeline complete!")
+    print(f"dbt_duration: {_dbt_duration:.2f}")
     return {
         "sync_success": True,
         "sync_duration": time.time() - _start_time,

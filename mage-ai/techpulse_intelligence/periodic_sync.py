@@ -40,6 +40,12 @@ def run():
                         mc_sync_rows.set(int(line.split(":")[1].strip()))
                     except ValueError:
                         pass
+                if "dbt_duration" in line:
+                    try:
+                        dbt_sec = float(line.split(":")[1].strip().rstrip(','))
+                        dbt_run_duration_seconds.set(dbt_sec)
+                    except (ValueError, IndexError):
+                        pass
         else:
             mc_sync_success.set(0)
             dbt_run_success.set(0)

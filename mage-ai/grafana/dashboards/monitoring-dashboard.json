@@ -275,7 +275,7 @@
       "description": "DashScope API 返回 429 的次数。非零表示触发了限流，需要降低请求频率",
       "gridPos": { "h": 6, "w": 4, "x": 12, "y": 20 },
       "targets": [
-        { "expr": "increase(ai_rate_limit_hits_total{job=\"orchestrator\"}[1h]) or vector(0)", "legendFormat": "__auto" }
+        { "expr": "increase(ai_rate_limit_hits_total{job=\"orchestrator\"}[1h])", "legendFormat": "__auto" }
       ],
       "fieldConfig": {
         "defaults": {
