@@ -12,7 +12,7 @@ from mage_ai.data_preparation.shared.secrets import get_secret_value
 _get_cache = None
 
 # 模型配置 — 与 billowing_hill.py 保持一致
-AI_MODEL = "glm-5.1"
+AI_MODEL = "qwen3.6-plus"
 INPUT_COST_PER_TOKEN = 0.0000005
 OUTPUT_COST_PER_TOKEN = 0.000002
 
@@ -36,7 +36,7 @@ def _get_llm():
     if _get_cache is not None:
         return _get_cache
     import dashscope
-    _get_cache = dashscope.Generation
+    _get_cache = dashscope.MultiModalConversation
     return _get_cache
 
 
@@ -77,7 +77,7 @@ def extract_entities(chunk_text: str, max_tokens: int = 256) -> list[dict[str, s
             model=AI_MODEL,
             messages=[{
                 "role": "user",
-                "content": ENTITY_PROMPT.format(text=chunk_text[:1000])
+                "content": [{"text": ENTITY_PROMPT.format(text=chunk_text[:1000])}]
             }],
             max_tokens=max_tokens,
             temperature=0.1,
@@ -99,7 +99,11 @@ def extract_entities(chunk_text: str, max_tokens: int = 256) -> list[dict[str, s
             if metrics[2] is not None:
                 _cost = _input * INPUT_COST_PER_TOKEN + _output * OUTPUT_COST_PER_TOKEN
                 metrics[2].labels(model=AI_MODEL).inc(_cost)
-        content = resp.output.choices[0]['message']['content']
+        raw = resp.output.choices[0]['message']['content']
+        if isinstance(raw, list):
+            content = " ".join(item.get("text", "") for item in raw if isinstance(item, dict))
+        else:
+            content = str(raw)
         # 清理 LLM 可能输出的 markdown 代码块包裹
         content = content.strip()
         if content.startswith("```"):

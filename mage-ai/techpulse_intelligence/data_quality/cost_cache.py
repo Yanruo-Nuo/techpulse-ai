@@ -47,7 +47,7 @@ class CostTracker:
         self._cache[key] = result
         return result
 
-    def track_call(self, operation: str, tokens: int, model: str = "glm-5.1"):
+    def track_call(self, operation: str, tokens: int, model: str = "qwen-plus"):
         """记录一次 LLM 调用"""
         self._stats[operation]["calls"] += 1
         self._stats[operation]["tokens"] += tokens

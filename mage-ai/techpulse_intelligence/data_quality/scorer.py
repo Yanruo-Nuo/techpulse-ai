@@ -40,7 +40,7 @@ def score_article(
     """
     import dashscope
     resp = dashscope.Generation.call(
-        model="glm-5.1",
+        model="qwen-plus",
         messages=[{
             "role": "user",
             "content": SCORING_PROMPT.format(

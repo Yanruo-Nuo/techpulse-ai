@@ -3,7 +3,7 @@ import re
 import json
 import time
 import dashscope
-from dashscope import Generation
+from dashscope import MultiModalConversation as Generation
 
 from metrics import (
     ai_token_usage_total, ai_token_cost_dollars,
@@ -12,7 +12,7 @@ from metrics import (
 from transformers.chunker import chunk_article
 
 # GLM-5.1 pricing via DashScope ($0.573/M input, $2.58/M output)
-AI_MODEL = "glm-5.1"
+AI_MODEL = "qwen3.6-plus"
 INPUT_COST_PER_TOKEN = 0.573 / 1_000_000
 OUTPUT_COST_PER_TOKEN = 2.58 / 1_000_000
 
@@ -22,6 +22,15 @@ if 'transformer' not in globals():
 dashscope.api_key = os.getenv("DASHSCOPE_KEY")
 
 MAX_RETRIES = 2
+
+
+def _extract_content(resp) -> str:
+    """从 API 响应中提取文本内容，兼容 Generation 和 MultiModalConversation 格式"""
+    raw = resp.output.choices[0]["message"]["content"]
+    if isinstance(raw, list):
+        # MultiModalConversation 格式: [{"text": "..."}, ...]
+        return " ".join(item.get("text", "") for item in raw if isinstance(item, dict))
+    return str(raw)
 
 CLASSIFY_PROMPT_TEMPLATE = """你是一位资深技术趋势分析师。根据技术新闻标题和正文，生成全面的中文分析。
 
@@ -54,7 +63,7 @@ def classify_from_text(title: str, content: str):
             _start = time.time()
             resp = Generation.call(
                 model=AI_MODEL,
-                messages=[{"role": "user", "content": prompt_text}],
+                messages=[{"role": "user", "content": [{"text": prompt_text}]}],
                 result_format="message",
                 temperature=0.3,
                 max_tokens=2048,
@@ -70,7 +79,7 @@ def classify_from_text(title: str, content: str):
                     ai_token_usage_total.labels(model=AI_MODEL, operation='classify').inc(_input + _output)
                     _cost = _input * INPUT_COST_PER_TOKEN + _output * OUTPUT_COST_PER_TOKEN
                     ai_token_cost_dollars.labels(model=AI_MODEL).inc(_cost)
-                return resp.output.choices[0]["message"]["content"]
+                return _extract_content(resp)
             elif resp.status_code == 429:
                 ai_rate_limit_hits_total.labels(model=AI_MODEL).inc()
             print(f"⚠️ AI API 错误 (attempt {attempt+1}): {resp.message}")
@@ -211,7 +220,7 @@ def _call_llm(prompt_text: str, max_tokens: int, temperature: float,
             _start = time.time()
             resp = Generation.call(
                 model=AI_MODEL,
-                messages=[{"role": "user", "content": prompt_text}],
+                messages=[{"role": "user", "content": [{"text": prompt_text}]}],
                 result_format="message",
                 temperature=temperature,
                 max_tokens=max_tokens,
@@ -229,7 +238,7 @@ def _call_llm(prompt_text: str, max_tokens: int, temperature: float,
                     )
                     _cost = _input * INPUT_COST_PER_TOKEN + _output * OUTPUT_COST_PER_TOKEN
                     ai_token_cost_dollars.labels(model=AI_MODEL).inc(_cost)
-                return resp.output.choices[0]["message"]["content"]
+                return _extract_content(resp)
             elif resp.status_code == 429:
                 ai_rate_limit_hits_total.labels(model=AI_MODEL).inc()
             print(f"⚠️ LLM {operation} 错误 (attempt {attempt+1}): {resp.message}")
