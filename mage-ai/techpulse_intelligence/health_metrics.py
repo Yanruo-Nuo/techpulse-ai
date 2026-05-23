@@ -33,11 +33,16 @@ consumer_pipeline_stage = Gauge(
     "consumer_pipeline_stage",
     "Current pipeline stage: 0=idle, 1=fetching, 2=ai, 3=writing",
 )
+consumer_stage_changed_timestamp = Gauge(
+    "consumer_stage_changed_timestamp",
+    "Unix timestamp when pipeline stage last changed",
+)
 
 # ── 共享状态（主线程写入，健康线程读取）──
 _last_success: float = 0
 _pending: int = 0
 _stage: int = 0
+_last_stage_change: float = 0
 _lock = threading.Lock()
 
 
@@ -45,6 +50,7 @@ def set_stage(stage: int):
     global _stage
     with _lock:
         _stage = stage
+        _last_stage_change = time.time()
 
 
 def set_pending(n: int):
@@ -67,6 +73,7 @@ def _refresh_loop(interval: int = 15):
             consumer_last_success_timestamp.set(_last_success)
             consumer_pending_articles.set(_pending)
             consumer_pipeline_stage.set(_stage)
+            consumer_stage_changed_timestamp.set(_last_stage_change)
         time.sleep(interval)
 
 

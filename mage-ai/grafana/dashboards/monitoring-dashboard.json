@@ -149,11 +149,36 @@
       ]
     },
     {
+      "title": "阶段持续时间",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "description": "当前管线阶段已持续的时间",
+      "gridPos": { "h": 6, "w": 4, "x": 4, "y": 7 },
+      "targets": [
+        { "expr": "time() - consumer_stage_changed_timestamp{job=\"consumer-health\"}", "legendFormat": "__auto" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "displayName": "持续时长",
+          "color": { "mode": "none" }
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      }
+    },
+    {
       "title": "AI Token 消耗趋势",
       "type": "timeseries",
       "datasource": "Prometheus",
       "description": "DashScope LLM 的 Token 消耗速率。异常飙升可能表示管线循环",
-      "gridPos": { "h": 12, "w": 8, "x": 0, "y": 7 },
+      "gridPos": { "h": 12, "w": 8, "x": 0, "y": 13 },
       "targets": [
         { "expr": "rate(ai_token_usage_total{job=\"orchestrator\"}[5m])", "legendFormat": "{{model}} - {{operation}}" }
       ]
@@ -163,7 +188,7 @@
       "type": "timeseries",
       "datasource": "Prometheus",
       "description": "各来源爬虫的采集延迟（秒）。值越大表示该源爬虫越久未成功采集",
-      "gridPos": { "h": 12, "w": 8, "x": 8, "y": 7 },
+      "gridPos": { "h": 12, "w": 8, "x": 8, "y": 13 },
       "targets": [
         { "expr": "crawler_produce_lag_seconds{job=\"news-crawler\"}", "legendFormat": "{{source}}" }
       ]
@@ -171,7 +196,7 @@
     {
       "title": "管线指标",
       "type": "row",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 19 }
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 }
     },
 
     {
@@ -179,7 +204,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "OSS→MaxCompute 同步状态。绿色=最近成功，红=失败/未运行",
-      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 20 },
+      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 26 },
       "targets": [
         { "expr": "mc_sync_success{job=\"orchestrator-sync\"}", "legendFormat": "__auto" }
       ],
@@ -214,7 +239,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "dbt 转换作业状态。绿色=成功，红色=失败，灰色=未运行",
-      "gridPos": { "h": 6, "w": 4, "x": 4, "y": 20 },
+      "gridPos": { "h": 6, "w": 4, "x": 4, "y": 26 },
       "targets": [
         { "expr": "dbt_run_success{job=\"orchestrator-sync\"}", "legendFormat": "__auto" }
       ],
@@ -249,7 +274,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "DashScope API 返回 429 的次数。非零表示触发了限流，需要降低请求频率",
-      "gridPos": { "h": 6, "w": 4, "x": 8, "y": 20 },
+      "gridPos": { "h": 6, "w": 4, "x": 8, "y": 26 },
       "targets": [
         { "expr": "increase(ai_rate_limit_hits_total{job=\"orchestrator\"}[1h])", "legendFormat": "__auto" }
       ],
@@ -284,7 +309,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "MaxCompute 数据扫描量",
-      "gridPos": { "h": 6, "w": 4, "x": 12, "y": 20 },
+      "gridPos": { "h": 6, "w": 4, "x": 12, "y": 26 },
       "targets": [
         { "expr": "increase(mc_query_scanned_bytes_total{job=\"tech-frontend\"}[1h])", "legendFormat": "__auto" }
       ],
@@ -309,7 +334,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "dbt 作业最近一次运行耗时",
-      "gridPos": { "h": 6, "w": 4, "x": 16, "y": 20 },
+      "gridPos": { "h": 6, "w": 4, "x": 16, "y": 26 },
       "targets": [
         { "expr": "dbt_run_duration_seconds{job=\"orchestrator-sync\"}", "legendFormat": "__auto" }
       ],
@@ -334,7 +359,7 @@
       "type": "timeseries",
       "datasource": "Prometheus",
       "description": "AI 字段缺失率（摘要、分类）与 Others 兜底分类占比。超出阈值需排查",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
       "targets": [
         { "expr": "dq_ai_summary_missing_ratio{job=\"tech-frontend\"}", "legendFormat": "摘要缺失率" },
         { "expr": "dq_ai_category_missing_ratio{job=\"tech-frontend\"}", "legendFormat": "分类缺失率" },
