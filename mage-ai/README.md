@@ -30,13 +30,13 @@
 
 ## 项目概述
 
-TechPulse AI 定位为一个**AI 增强的数据工程平台**。它从 6 个英文技术源（Hacker News、Reddit、GitHub Trending、Dev.to、Lobsters、RSS）实时采集技术新闻，经过 **Kafka 消息队列**流式处理，由 **DashScope AI（GLM-5.1）** 进行自动分类、摘要生成和深度洞察，最终存入**阿里云 OSS 数据湖 + MaxCompute 数据仓库**，并通过 **dbt** 进行分层建模后，在 **Streamlit** 前端提供时间线浏览、收藏管理和**RAG 语义检索**等能力。
+TechPulse AI 定位为一个**AI 增强的数据工程平台**。它从 6 个英文技术源（Hacker News、Reddit、GitHub Trending、Dev.to、Lobsters、RSS）实时采集技术新闻，经过 **Kafka 消息队列**流式处理，由 **DashScope AI（Qwen3.6-Plus）** 进行自动分类、摘要生成和深度洞察，最终存入**阿里云 OSS 数据湖 + MaxCompute 数据仓库**，并通过 **dbt** 进行分层建模后，在 **Streamlit** 前端提供时间线浏览、收藏管理和**RAG 语义检索**等能力。
 
 **核心数据流：** 采集 → 消息队列 → AI 增强 → 数据湖 → 数仓建模 → 服务供数 → 展示
 
 **项目亮点：**
 - **Kafka 流处理** — 多源采集器解耦于管道加工，支持缓冲、批量消费、死信重试
-- **AI 增强管线** — DashScope GLM-5.1 对每篇文章做结构化分类、摘要、洞察；输出经过 5 维度质量校验
+- **AI 增强管线** — DashScope Qwen3.6-Plus 对每篇文章做结构化分类、摘要、洞察；输出经过 5 维度质量校验
 - **向量语义检索** — Qdrant HNSW 近似检索替代 O(n) 暴力扫描，首屏从 80s 降至 <5ms
 - **dbt 数仓建模** — 分层建模（ODS → DWD → DWS → ADS），支持增量更新、测试、文档化
 - **全链路监控** — Prometheus + Grafana 覆盖采集、AI、存储各环节，7 条告警规则
@@ -76,7 +76,7 @@ TechPulse AI 定位为一个**AI 增强的数据工程平台**。它从 6 个英
 │                               │                                                │
 │                     ┌─────────▼─────────┐  ┌──────────────────┐               │
 │                     │ transform_ai()     │  │ 5-Dimension DQ   │               │
-│                     │ (DashScope GLM-5.1)│──┤ Validator        │               │
+│                     │ (DashScope Qwen3.6-Plus)│──┤ Validator        │               │
 │                     │ 分类/摘要/洞察      │  │ (Prometheus Gauge)│               │
 │                     └─────────┬─────────┘  └──────────────────┘               │
 │                               │                                                │
@@ -151,7 +151,7 @@ TechPulse AI 定位为一个**AI 增强的数据工程平台**。它从 6 个英
 
 | 类别 | 技术 | 用途 |
 |------|------|------|
-| LLM 推理 | DashScope / GLM-5.1 | 文章分类、摘要生成、深度洞察 |
+| LLM 推理 | DashScope / Qwen3.6-Plus | 文章分类、摘要生成、深度洞察 |
 | 文本嵌入 | DashScope / text-embedding-v2 | 1536 维向量，RAG 检索底座 |
 | 向量数据库 | Qdrant | HNSW 近似检索，payload 过滤 |
 | 质量校验 | 自研 5 维度校验 | 缺失率/分类/幻觉/JSON/长度 → Prometheus |
@@ -180,13 +180,13 @@ TechPulse AI 定位为一个**AI 增强的数据工程平台**。它从 6 个英
 
 ```
 采集器 ──(push)──→ Kafka ──(poll batch=10)──→ Consumer ──(clean)──→ AI ──(check)──→ OSS
-  6 scraper        raw_tech_feeds                   transform_fetch   GLM-5.1   5-DQ validate
+  6 scraper        raw_tech_feeds                   transform_fetch   Qwen3.6-Plus   5-DQ validate
 ```
 
 1. **producer/main.py** — 6 个 scraper 轮流执行，每篇文章实时推入 Kafka topic `raw_tech_feeds`
 2. **kafka_consumer.py** — 每次 poll 批量消费，batch=10，并行执行清洗、AI 增强、质检
 3. **transform_fetch** — 数据格式统一、字段清洗、URL 去重
-4. **transform_ai** — DashScope GLM-5.1 调用，输出 `ai_summary`、`tech_category`、`ai_insight`
+4. **transform_ai** — DashScope Qwen3.6-Plus 调用，输出 `ai_summary`、`tech_category`、`ai_insight`
 5. **validate_batch** — 5 维度校验：缺失率、分类合法性、Others 占比、JSON 解析失败率、幻觉检测
 6. **DeadLetterQueue** — 同批失败 3 次后写入 `logs/dead_letter.jsonl`，防止无限重试
 7. **sink.batch_write** — 写入 OSS Parquet 文件，按天分区 `ds=YYYYMMDD`

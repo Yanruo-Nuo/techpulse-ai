@@ -138,9 +138,9 @@ TechPulse AI 从 6 个技术源（Hacker News、Reddit、GitHub Trending、Dev.t
 | 类别 | 技术 | 用途 |
 |------|------|------|
 | 文档分块 | `chunker.py`（自研）| 按来源类型路由（段落/Reddit/GitHub），512 tokens/块，overlap 64 |
-| 第一轮提取 | DashScope / GLM-5.1 (temp=0.1) | 逐块提取技术实体、工具提及、主题、难度 |
-| 第二轮关联 | DashScope / GLM-5.1 (temp=0.3) | 全文章关联分析，抽取应用场景、相关技术、核心观点 |
-| 第三轮推荐 | DashScope / GLM-5.1 (temp=0.5) | 整合推荐：工具推荐 + 项目关联度评估 |
+| 第一轮提取 | DashScope / Qwen3.6-Plus (temp=0.1) | 逐块提取技术实体、工具提及、主题、难度 |
+| 第二轮关联 | DashScope / Qwen3.6-Plus (temp=0.3) | 全文章关联分析，抽取应用场景、相关技术、核心观点 |
+| 第三轮推荐 | DashScope / Qwen3.6-Plus (temp=0.5) | 整合推荐：工具推荐 + 项目关联度评估 |
 | 文本嵌入 | DashScope / text-embedding-v2 | 1536 维向量，每块独立 embedding |
 | 向量数据库 | Qdrant | HNSW 近似检索，块级 payload 过滤 |
 | 质量校验 | 自研 5 维度校验 | 缺失率/分类/JSON/幻觉 → Prometheus Gauge |
