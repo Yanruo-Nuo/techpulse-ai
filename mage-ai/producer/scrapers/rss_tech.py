@@ -22,7 +22,7 @@ class RsstechScraper(BaseScraper):
 
     @property
     def max_per_run(self) -> int:
-        return 40
+        return 80
 
     def fetch(self) -> List[Article]:
         articles = []

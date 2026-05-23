@@ -137,7 +137,7 @@ class BaseScraper(ABC):
 
     @property
     def max_per_run(self) -> int:
-        return 30
+        return 60
 
     @property
     def enabled(self) -> bool:

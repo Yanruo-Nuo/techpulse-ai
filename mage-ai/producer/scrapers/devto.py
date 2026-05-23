@@ -17,7 +17,7 @@ class DevtoScraper(BaseScraper):
         return False
 
     def fetch(self) -> List[Article]:
-        data = self.client.get_json("https://dev.to/api/articles?top=1&per_page=30")
+        data = self.client.get_json("https://dev.to/api/articles?top=1&per_page=60")
         if not data:
             return []
         articles = []

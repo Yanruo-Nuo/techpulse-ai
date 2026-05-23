@@ -15,7 +15,7 @@ class GithubTrendingScraper(BaseScraper):
 
     @property
     def max_per_run(self) -> int:
-        return 25
+        return 50
 
     def fetch(self) -> List[Article]:
         html = self.client.get_text("https://github.com/trending")

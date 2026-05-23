@@ -16,7 +16,7 @@ class RedditScraper(BaseScraper):
 
     @property
     def max_per_run(self) -> int:
-        return 50
+        return 100
 
     @property
     def check_robots(self) -> bool:
