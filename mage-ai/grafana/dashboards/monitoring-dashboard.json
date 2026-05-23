@@ -173,31 +173,7 @@
       "type": "row",
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 19 }
     },
-    {
-      "title": "OSS 写入状态",
-      "type": "stat",
-      "datasource": "Prometheus",
-      "description": "最近 1 小时 OSS 成功写入的文章数。0 表示无写入",
-      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 20 },
-      "targets": [
-        { "expr": "increase(oss_write_total{job=\"orchestrator\",status='success'}[1h])", "legendFormat": "__auto" }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "displayName": "1h 写入量",
-          "color": { "mode": "none" }
-        }
-      },
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "horizontal",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "textMode": "auto"
-      }
-    },
+
     {
       "title": "MaxCompute 同步",
       "type": "stat",
