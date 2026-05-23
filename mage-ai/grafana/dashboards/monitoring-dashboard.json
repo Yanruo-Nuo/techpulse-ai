@@ -54,7 +54,7 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "当前管线所处阶段：空闲 / 抓取中 / AI 处理中 / 写入中",
-      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 1 },
+      "gridPos": { "h": 6, "w": 4, "x": 4, "y": 1 },
       "targets": [
         { "expr": "consumer_pipeline_stage{job=\"consumer-health\"}", "legendFormat": "__auto" }
       ],
@@ -82,9 +82,9 @@
       "type": "stat",
       "datasource": "Prometheus",
       "description": "当前阶段已运行时间（自动更新）",
-      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 6 },
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 7 },
       "targets": [
-        { "expr": "time() - consumer_stage_changed_timestamp{job=\"consumer-health\"} or vector(0)", "legendFormat": "__auto" }
+        { "expr": "(time() - consumer_stage_changed_timestamp{job=\"consumer-health\"}) and (consumer_stage_changed_timestamp{job=\"consumer-health\"} > 0) or vector(0)", "legendFormat": "__auto" }
       ],
       "fieldConfig": {
         "defaults": {
