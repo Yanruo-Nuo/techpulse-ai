@@ -47,7 +47,7 @@ _lock = threading.Lock()
 
 
 def set_stage(stage: int):
-    global _stage
+    global _stage, _last_stage_change
     with _lock:
         _stage = stage
         _last_stage_change = time.time()
@@ -86,6 +86,7 @@ def start_health_server(port: int = 8005):
     consumer_alive.labels(pipeline="techpulse").set(1)
     consumer_pending_articles.set(0)
     consumer_pipeline_stage.set(0)
+    consumer_stage_changed_timestamp.set(0)
 
     t = threading.Thread(target=_refresh_loop, daemon=True, args=(15,))
     t.start()
