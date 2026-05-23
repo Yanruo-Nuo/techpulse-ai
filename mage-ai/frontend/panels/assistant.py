@@ -45,7 +45,7 @@ def agentic_rag(query, df, df_trend=None, max_steps=3):
 
     import dashscope
     gen_resp = dashscope.Generation.call(
-        model="glm-5.1",
+        model="qwen3.6-plus",
         messages=[{"role": "user", "content": prompt}],
         result_format='message',
     )
@@ -153,7 +153,7 @@ def get_rag_response(query, df, df_trend=None, messages=None):
 5. 用中文回答，简洁专业"""
 
     gen_resp = dashscope.Generation.call(
-        model="glm-5.1",
+        model="qwen3.6-plus",
         messages=[{"role": "user", "content": prompt}],
         result_format='message'
     )
