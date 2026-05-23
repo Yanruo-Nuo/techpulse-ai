@@ -310,7 +310,7 @@
       "description": "MaxCompute 数据扫描量",
       "gridPos": { "h": 6, "w": 4, "x": 16, "y": 20 },
       "targets": [
-        { "expr": "increase(mc_query_scanned_bytes_total[1h])", "legendFormat": "__auto" }
+        { "expr": "increase(mc_query_scanned_bytes_total{job=\"orchestrator-sync\"}[1h])", "legendFormat": "__auto" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -335,7 +335,7 @@
       "description": "dbt 作业最近一次运行耗时",
       "gridPos": { "h": 6, "w": 4, "x": 20, "y": 20 },
       "targets": [
-        { "expr": "dbt_run_duration_seconds", "legendFormat": "__auto" }
+        { "expr": "dbt_run_duration_seconds{job=\"orchestrator-sync\"}", "legendFormat": "__auto" }
       ],
       "fieldConfig": {
         "defaults": {
