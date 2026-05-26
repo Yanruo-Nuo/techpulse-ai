@@ -235,7 +235,7 @@ techpulse-ai/
 
 ---
 
-## 项目亮点（面试可讲）
+## 面板展示
 
 - **全链路数据工程**：采集 → Kafka → AI 增强 → 数据湖 → 数仓建模 → 服务展示 → 监控告警
 - **多轮 AI 知识抽取**：分块 → 逐块实体提取 → 关联分析 → 整合推荐，替代传统单次摘要调用
@@ -244,6 +244,13 @@ techpulse-ai/
 - **dbt 分层建模**：ODS → DWD → DWS → ADS 完整分层，42 个数据质量测试
 - **实时可观测性**：Prometheus 3 端点 + Grafana 9 面板 + 9 告警规则
 - **成本意识**：Token 计费追踪、MaxCompute 扫描量监控
+
+- <img width="2393" height="1379" alt="image" src="https://github.com/user-attachments/assets/296f53b0-3a2b-4602-b390-faeb6b700e21" />
+
+<img width="2931" height="1850" alt="image" src="https://github.com/user-attachments/assets/717fcafd-12ad-495f-b5db-919f0f66fdbc" />
+
+<img width="2931" height="1850" alt="image" src="https://github.com/user-attachments/assets/4b784eef-cca4-4876-a583-544d7f39f943" />
+
 
 ---
 
